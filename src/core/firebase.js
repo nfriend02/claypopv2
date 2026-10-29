@@ -1,27 +1,61 @@
 // src/core/firebase.js
-// Auth manager (local mock of Firebase Auth) with a strict development admin whitelist.
-// Production: replace with Firebase Auth + a server-side custom claim ({ admin: true }) checked by rules.
+// Auth manager on Firebase Auth: Email/Password, mobile number + password (no SMS), anonymous guest, Google.
+// Admin = a signed-in, password-verified identity on the development whitelist (.env.local).
 
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signInAnonymously,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+  updateProfile,
+  deleteUser
+} from 'firebase/auth';
+import { fbAuth } from './firebaseApp.js';
+import { cloud } from './cloud.js';
 import { saveSystem } from './SaveSystem.js';
-import { sha256Hex } from './crypto.js';
-
-const USER_KEY = 'claypopv2_user';
-const ACCOUNTS_KEY = 'claypopv2_accounts';
-const PASSWORD_SALT = 'claypopv2:';
+import { PHONE_LOGIN_DOMAIN } from '../config/firebaseConfig.js';
 
 // Development admins come from .env.local (never committed). Without it nobody is admin.
 //   VITE_ADMIN_IDENTITIES=email:someone@example.com,phone:+821000000000
-//   VITE_ADMIN_PASSWORD_SHA256=<sha256 hex of the admin password>
 const ADMIN_IDENTITIES = new Set(
   String(import.meta.env.VITE_ADMIN_IDENTITIES || '').split(',').map((s) => s.trim()).filter(Boolean)
 );
-const ADMIN_PASSWORD_SHA256 = String(import.meta.env.VITE_ADMIN_PASSWORD_SHA256 || '').trim().toLowerCase();
+
+const ERROR_CODES = {
+  'auth/invalid-credential': 'invalid',
+  'auth/invalid-login-credentials': 'invalid',
+  'auth/wrong-password': 'invalid',
+  'auth/user-not-found': 'invalid',
+  'auth/user-disabled': 'invalid',
+  'auth/email-already-in-use': 'exists',
+  'auth/weak-password': 'password_short',
+  'auth/invalid-email': 'email_format',
+  'auth/missing-password': 'required',
+  'auth/too-many-requests': 'too_many',
+  'auth/network-request-failed': 'network',
+  'auth/popup-closed-by-user': 'popup_closed',
+  'auth/cancelled-popup-request': 'popup_closed',
+  'auth/popup-blocked': 'popup_closed',
+  'auth/operation-not-allowed': 'disabled',
+  'auth/admin-restricted-operation': 'disabled',
+  'auth/unauthorized-domain': 'domain',
+  'auth/requires-recent-login': 'recent_login'
+};
 
 export class AuthError extends Error {
   constructor(code) {
     super(code);
     this.code = code;
   }
+}
+
+function toAuthError(err) {
+  if (err instanceof AuthError) return err;
+  console.warn('[Auth]', err?.code || err);
+  return new AuthError(ERROR_CODES[err?.code] || 'unknown');
 }
 
 export function normalizeEmail(raw) {
@@ -43,24 +77,20 @@ export function normalizePhone(countryCode, raw) {
   return '+' + cc + digits;
 }
 
-async function hashPassword(password) {
-  return sha256Hex(PASSWORD_SALT + password);
+const phoneLoginEmail = (e164) => `${e164.slice(1)}@${PHONE_LOGIN_DOMAIN}`;
+
+function identityOf(fb) {
+  if (!fb || fb.isAnonymous || !fb.email) return null;
+  const email = fb.email.toLowerCase();
+  if (email.endsWith(`@${PHONE_LOGIN_DOMAIN}`)) return `phone:+${email.split('@')[0]}`;
+  return `email:${email}`;
 }
 
-async function adminProofFor(identity) {
-  return sha256Hex(`admin|${identity}|${ADMIN_PASSWORD_SHA256}`);
-}
-
-function loadAccounts() {
-  try {
-    return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '{}');
-  } catch {
-    return {};
-  }
-}
-
-function saveAccounts(accounts) {
-  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+function loginTypeOf(fb, identity) {
+  if (fb.isAnonymous) return 'guest';
+  if (identity?.startsWith('phone:')) return 'phone';
+  if (fb.providerData.some((p) => p.providerId === 'google.com')) return 'google';
+  return 'email';
 }
 
 class AuthManager {
@@ -68,34 +98,51 @@ class AuthManager {
     this.user = null;
     this.adminVerified = false;
     this.listeners = [];
-    try {
-      const stored = localStorage.getItem(USER_KEY);
-      this.user = stored ? JSON.parse(stored) : null;
-    } catch {
+    this.ready = new Promise((resolve) => { this._resolveReady = resolve; });
+
+    onAuthStateChanged(fbAuth, async (fb) => {
+      if (fb && this.user?.uid === fb.uid) return;
+      await this.apply(fb);
+      this._resolveReady();
+    });
+  }
+
+  async apply(fb) {
+    if (!fb) {
       this.user = null;
-    }
-    localStorage.removeItem('claypop_user');
-    this.verifyAdmin();
-  }
-
-  async verifyAdmin() {
-    const u = this.user;
-    let ok = false;
-    if (u && u.identity && ADMIN_IDENTITIES.has(u.identity) && u.adminProof) {
-      ok = u.adminProof === (await adminProofFor(u.identity));
-    }
-    if (this.user === u) {
-      this.adminVerified = ok;
+      this.adminVerified = false;
       this.notify();
+      return null;
     }
+    const identity = identityOf(fb);
+    const loginType = loginTypeOf(fb, identity);
+    const fallbackName = loginType === 'guest' ? 'Guest' : (fb.email || 'Cowboy').split('@')[0];
+    this.user = {
+      uid: fb.uid,
+      identity,
+      displayName: fb.displayName || fallbackName,
+      loginType,
+      isAnonymous: fb.isAnonymous,
+      email: loginType === 'phone' ? null : fb.email || null,
+      phoneNumber: loginType === 'phone' ? identity.slice('phone:'.length) : null,
+      createdAt: Date.parse(fb.metadata.creationTime) || Date.now()
+    };
+    // Firebase Auth has verified the password for this identity; only whitelisted identities are admins
+    this.adminVerified = !!identity && ADMIN_IDENTITIES.has(identity);
+    this.notify();
+    this.syncFromCloud(this.user);
+    return this.user;
   }
 
-  async setUser(user) {
-    this.user = user;
-    this.adminVerified = false;
-    if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
-    else localStorage.removeItem(USER_KEY);
-    await this.verifyAdmin();
+  async syncFromCloud(user) {
+    try {
+      await cloud.upsertProfile(user);
+      const progress = await cloud.loadProgress(user.uid);
+      if (progress && this.user?.uid === user.uid) saveSystem.mergeFromCloud(progress);
+      else if (!progress) await cloud.saveProgress(user.uid, saveSystem.data);
+    } catch (err) {
+      console.warn('[CloudSave] sync failed:', err.code || err);
+    }
   }
 
   onAuthStateChanged(cb) {
@@ -118,126 +165,101 @@ class AuthManager {
     return this.adminVerified === true;
   }
 
-  async buildUser(identity, loginType, displayName, extra = {}) {
-    const user = {
-      uid: 'usr_' + (await sha256Hex(identity)).slice(0, 16),
-      identity,
-      displayName,
-      loginType,
-      isAnonymous: false,
-      createdAt: Date.now(),
-      ...extra
-    };
-    return user;
-  }
-
-  async signInWithIdentity(identity, password, loginType, extra) {
-    const hash = await hashPassword(password);
-    if (ADMIN_IDENTITIES.has(identity)) {
-      if (hash !== ADMIN_PASSWORD_SHA256) throw new AuthError('invalid');
-      const user = await this.buildUser(identity, loginType, 'Admin Sheriff', extra);
-      user.adminProof = await adminProofFor(identity);
-      await this.setUser(user);
-      return user;
+  async signInWithLoginEmail(loginEmail, password) {
+    try {
+      const cred = await signInWithEmailAndPassword(fbAuth, loginEmail, password);
+      return this.apply(cred.user);
+    } catch (err) {
+      throw toAuthError(err);
     }
-    const account = loadAccounts()[identity];
-    if (!account || account.hash !== hash) throw new AuthError('invalid');
-    const user = await this.buildUser(identity, loginType, account.displayName, extra);
-    await this.setUser(user);
-    return user;
   }
 
-  async registerIdentity(identity, password, nickname, loginType, extra) {
+  async registerLoginEmail(identity, loginEmail, password, nickname) {
     if (ADMIN_IDENTITIES.has(identity)) throw new AuthError('reserved');
     if (!password || password.length < 6) throw new AuthError('password_short');
-    const accounts = loadAccounts();
-    if (accounts[identity]) throw new AuthError('exists');
-    const displayName = (nickname || '').trim() || identity.split(':')[1].split('@')[0];
-    accounts[identity] = { hash: await hashPassword(password), displayName, createdAt: Date.now() };
-    saveAccounts(accounts);
-    const user = await this.buildUser(identity, loginType, displayName, extra);
-    await this.setUser(user);
-    return user;
+    try {
+      const cred = await createUserWithEmailAndPassword(fbAuth, loginEmail, password);
+      const displayName = String(nickname || '').trim() || identity.split(':')[1].split('@')[0];
+      await updateProfile(cred.user, { displayName });
+      return this.apply(cred.user);
+    } catch (err) {
+      throw toAuthError(err);
+    }
   }
 
   async signInWithEmail(email, password) {
     const e = normalizeEmail(email);
-    if (!isValidEmail(e)) throw new AuthError('email_format');
-    return this.signInWithIdentity(`email:${e}`, password, 'email', { email: e });
+    if (!isValidEmail(e) || e.endsWith(`@${PHONE_LOGIN_DOMAIN}`)) throw new AuthError('email_format');
+    return this.signInWithLoginEmail(e, password);
   }
 
   async registerWithEmail(email, password, nickname) {
     const e = normalizeEmail(email);
-    if (!isValidEmail(e)) throw new AuthError('email_format');
-    return this.registerIdentity(`email:${e}`, password, nickname, 'email', { email: e });
+    if (!isValidEmail(e) || e.endsWith(`@${PHONE_LOGIN_DOMAIN}`)) throw new AuthError('email_format');
+    return this.registerLoginEmail(`email:${e}`, e, password, nickname);
   }
 
   async signInWithPhone(countryCode, phone, password) {
     const p = normalizePhone(countryCode, phone);
     if (p.length < 10) throw new AuthError('phone_format');
-    return this.signInWithIdentity(`phone:${p}`, password, 'phone', { phoneNumber: p });
+    return this.signInWithLoginEmail(phoneLoginEmail(p), password);
   }
 
   async registerWithPhone(countryCode, phone, password, nickname) {
     const p = normalizePhone(countryCode, phone);
     if (p.length < 10) throw new AuthError('phone_format');
-    return this.registerIdentity(`phone:${p}`, password, nickname, 'phone', { phoneNumber: p });
+    return this.registerLoginEmail(`phone:${p}`, phoneLoginEmail(p), password, nickname);
   }
 
   async signInAsGuest(nickname) {
     const nick = String(nickname || '').trim();
     if (nick.length < 2 || nick.length > 10) throw new AuthError('nickname');
-    const user = {
-      uid: 'guest_' + Math.random().toString(36).slice(2, 10),
-      identity: null,
-      displayName: nick,
-      loginType: 'guest',
-      isAnonymous: true,
-      createdAt: Date.now()
-    };
-    await this.setUser(user);
-    return user;
+    try {
+      const cred = await signInAnonymously(fbAuth);
+      await updateProfile(cred.user, { displayName: nick });
+      return this.apply(cred.user);
+    } catch (err) {
+      throw toAuthError(err);
+    }
   }
 
   async signInWithGoogle() {
-    const user = {
-      uid: 'goog_' + Math.random().toString(36).slice(2, 10),
-      identity: null,
-      displayName: 'Google Cowboy',
-      loginType: 'google',
-      isAnonymous: false,
-      createdAt: Date.now()
-    };
-    await this.setUser(user);
-    return user;
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const cred = await signInWithPopup(fbAuth, provider);
+      return this.apply(cred.user);
+    } catch (err) {
+      throw toAuthError(err);
+    }
   }
 
   async updateNickname(newNick) {
-    if (!this.user) return;
-    this.user.displayName = newNick;
-    if (this.user.identity) {
-      const accounts = loadAccounts();
-      if (accounts[this.user.identity]) {
-        accounts[this.user.identity].displayName = newNick;
-        saveAccounts(accounts);
-      }
-    }
-    await this.setUser(this.user);
+    const fb = fbAuth.currentUser;
+    if (!fb) return;
+    await updateProfile(fb, { displayName: newNick });
+    await this.apply(fb);
   }
 
   async signOut() {
-    await this.setUser(null);
+    await signOut(fbAuth);
+    await this.apply(null);
   }
 
+  // Removes the user's Firestore/Storage data, then the Auth account itself
   async deleteAccount() {
-    if (!this.user) return;
-    if (this.user.identity) {
-      const accounts = loadAccounts();
-      delete accounts[this.user.identity];
-      saveAccounts(accounts);
+    const fb = fbAuth.currentUser;
+    if (!fb) return;
+    try {
+      await cloud.deleteUserData(fb.uid);
+      await deleteUser(fb);
+    } catch (err) {
+      if (err?.code === 'auth/requires-recent-login') await signOut(fbAuth);
+      throw toAuthError(err);
+    } finally {
+      saveSystem.resetAll();
     }
-    saveSystem.resetAll();
-    await this.setUser(null);
+    await this.apply(null);
   }
 }
 
@@ -245,11 +267,6 @@ export const auth = new AuthManager();
 
 window.addEventListener('claypop_request_cloud_sync', (e) => {
   const user = auth.getUser();
-  if (user && !user.isAnonymous) {
-    try {
-      localStorage.setItem(`claypop_cloud_${user.uid}`, JSON.stringify(e.detail));
-    } catch (err) {
-      console.warn('[CloudSave] Local cloud-cache failed:', err);
-    }
-  }
+  if (!user) return;
+  cloud.saveProgress(user.uid, e.detail).catch((err) => console.warn('[CloudSave] save failed:', err.code || err));
 });

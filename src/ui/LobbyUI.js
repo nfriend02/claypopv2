@@ -2,6 +2,7 @@
 // Lobby (first screen) + Settings and My Page modals
 
 import { auth } from '../core/firebase.js';
+import { cloud } from '../core/cloud.js';
 import { saveSystem } from '../core/SaveSystem.js';
 import { soundSynth } from '../audio/SoundSynth.js';
 import { i18n } from '../core/i18n.js';
@@ -151,12 +152,25 @@ export class LobbyUI {
           <div class="phone-row"><input type="text" name="nick" maxlength="10" placeholder="${escapeHtml(user.displayName)}">
           <button type="button" class="btn btn-teal" data-act="nick">${t('save')}</button></div>
         </label>
+        <div class="recent-runs">
+          <b>${t('mypage_recent_runs')}</b>
+          <ul data-runs><li class="muted">${t('mypage_loading')}</li></ul>
+        </div>
         <div class="btn-row">
           <button type="button" class="btn btn-cream" data-act="logout">${t('logout')}</button>
           <button type="button" class="btn btn-red" data-act="delete">${t('mypage_delete_account')}</button>
         </div>
       </div>
     `, (root) => {
+      const list = root.querySelector('[data-runs]');
+      cloud.listRuns(user.uid).then((runs) => {
+        list.innerHTML = runs.length
+          ? runs.map((r) => `<li><span>STAGE ${r.stage} · ${r.clear ? 'CLEAR' : 'FAIL'}</span><b>${Number(r.score).toLocaleString()}</b><small>${r.at ? r.at.toLocaleDateString() : ''}</small></li>`).join('')
+          : `<li class="muted">${t('mypage_no_runs')}</li>`;
+      }).catch(() => {
+        list.innerHTML = `<li class="muted">${t('auth_err_network')}</li>`;
+      });
+
       root.querySelector('[data-act="nick"]').addEventListener('click', async () => {
         const nick = root.querySelector('[name="nick"]').value.trim();
         if (nick.length >= 2 && nick.length <= 10) {
@@ -174,7 +188,11 @@ export class LobbyUI {
         if (!confirm(t('mypage_delete_warning'))) return;
         const word = prompt(t('mypage_delete_confirm_step2'));
         if (word === '탈퇴' || word === 'DELETE' || word === '退会') {
-          await auth.deleteAccount();
+          try {
+            await auth.deleteAccount();
+          } catch (err) {
+            alert(t(`auth_err_${err.code || 'unknown'}`));
+          }
           this.closeModal();
           this.render();
         }

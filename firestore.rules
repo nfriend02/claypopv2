@@ -1,0 +1,40 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // users/{uid}: profile + progress, only the owner may read / write / delete it
+    match /users/{uid} {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(
+          ['displayName', 'loginType', 'email', 'phoneNumber', 'isAnonymous', 'createdAt', 'updatedAt', 'progress'])
+        && (!('displayName' in request.resource.data)
+          || (request.resource.data.displayName is string && request.resource.data.displayName.size() <= 40))
+        && (!('progress' in request.resource.data) || request.resource.data.progress is map);
+
+      // One document per finished stage; records are immutable once written
+      match /runs/{runId} {
+        allow read, delete: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(
+            ['stage', 'character', 'mode', 'score', 'hits', 'shots', 'maxCombo', 'clear', 'at'])
+          && request.resource.data.stage is int
+          && request.resource.data.stage >= 1 && request.resource.data.stage <= 5
+          && request.resource.data.score is int
+          && request.resource.data.score >= 0 && request.resource.data.score < 10000000
+          && request.resource.data.clear is bool
+          && request.resource.data.at == request.time;
+        allow update: if false;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

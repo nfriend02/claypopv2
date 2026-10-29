@@ -14,6 +14,7 @@ import { soundSynth } from '../audio/SoundSynth.js';
 import { gameState, GameStates } from './GameState.js';
 import { GameScheduler } from './GameScheduler.js';
 import { auth } from './firebase.js';
+import { cloud } from './cloud.js';
 import { i18n } from './i18n.js';
 
 import { IntroCutscene } from '../ui/IntroCutscene.js';
@@ -324,6 +325,22 @@ export class HybridGameManager {
     this.overlay.setView(null);
     this.resultUI.showResult(isClear, { instant: true });
     this.cutscene.hide();
+    this.recordRun(isClear);
+  }
+
+  recordRun(isClear) {
+    const user = auth.getUser();
+    if (!user) return;
+    cloud.addRun(user.uid, {
+      stage: gameState.currentStageNumber,
+      character: this.player.charId,
+      mode: gameState.selectedTargetMode || 'clay_disc',
+      score: Math.max(0, Math.round(gameState.score)),
+      hits: gameState.totalHits,
+      shots: gameState.totalShots,
+      maxCombo: gameState.maxCombo,
+      clear: isClear
+    }).catch((err) => console.warn('[CloudSave] run record failed:', err.code || err));
   }
 
   onNextStageClick() {
