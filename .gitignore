@@ -1,0 +1,24 @@
+node_modules/
+dist/
+.cache/
+.vite/
+
+# Local secrets (admin whitelist)
+.env
+.env.local
+.env.*.local
+
+# Raw source media (converted results live in public/)
+raw_videos/
+raw_generated/
+raw_backgrounds/
+
+# Python
+__pycache__/
+*.pyc
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log

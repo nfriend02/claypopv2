@@ -1,0 +1,52 @@
+{
+ "character": "middle_cowboy",
+ "cell": 256,
+ "cols": 12,
+ "rows": 8,
+ "fps": 24,
+ "motions": {
+  "idle_aim": {
+   "sheet": "/assets/anim/middle_cowboy/idle_aim_sheet.webp",
+   "meta": "/assets/anim/middle_cowboy/idle_aim_sheet.json",
+   "loop": true,
+   "rig": true,
+   "poseLibrary": false
+  },
+  "walk_left_right": {
+   "sheet": "/assets/anim/middle_cowboy/walk_left_right_sheet.webp",
+   "meta": "/assets/anim/middle_cowboy/walk_left_right_sheet.json",
+   "loop": true,
+   "rig": true,
+   "poseLibrary": false
+  },
+  "walk_up_down": {
+   "sheet": "/assets/anim/middle_cowboy/walk_up_down_sheet.webp",
+   "meta": "/assets/anim/middle_cowboy/walk_up_down_sheet.json",
+   "loop": true,
+   "rig": true,
+   "poseLibrary": false
+  },
+  "shoot_recoil": {
+   "sheet": "/assets/anim/middle_cowboy/shoot_recoil_sheet.webp",
+   "meta": "/assets/anim/middle_cowboy/shoot_recoil_sheet.json",
+   "loop": false,
+   "rig": true,
+   "poseLibrary": false
+  },
+  "wave_flinch": {
+   "sheet": "/assets/anim/middle_cowboy/wave_flinch_sheet.webp",
+   "meta": "/assets/anim/middle_cowboy/wave_flinch_sheet.json",
+   "loop": false,
+   "rig": false,
+   "poseLibrary": false
+  },
+  "cheer_victory": {
+   "sheet": "/assets/anim/middle_cowboy/cheer_victory_sheet.webp",
+   "meta": "/assets/anim/middle_cowboy/cheer_victory_sheet.json",
+   "loop": false,
+   "rig": false,
+   "poseLibrary": false
+  }
+ },
+ "standingHeight": 171.0
+}

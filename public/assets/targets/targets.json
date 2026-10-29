@@ -1,0 +1,62 @@
+{
+ "clay_disc": {
+  "width": 256,
+  "height": 212,
+  "halfWidth": 127.0,
+  "halfHeight": 105.0,
+  "equivalentRadius": 113.5,
+  "fill": 0.746,
+  "aspect": 1.208,
+  "url": "/assets/targets/clay_disc.png"
+ },
+ "clay_boomerang": {
+  "width": 256,
+  "height": 175,
+  "halfWidth": 127.0,
+  "halfHeight": 86.5,
+  "equivalentRadius": 73.7,
+  "fill": 0.38,
+  "aspect": 1.463,
+  "url": "/assets/targets/clay_boomerang.png"
+ },
+ "clay_ufo": {
+  "width": 255,
+  "height": 184,
+  "halfWidth": 126.5,
+  "halfHeight": 91.0,
+  "equivalentRadius": 101.3,
+  "fill": 0.687,
+  "aspect": 1.386,
+  "url": "/assets/targets/clay_ufo.png"
+ },
+ "badge_gold": {
+  "width": 256,
+  "height": 250,
+  "halfWidth": 127.0,
+  "halfHeight": 124.0,
+  "equivalentRadius": 94.6,
+  "fill": 0.439,
+  "aspect": 1.024,
+  "url": "/assets/targets/badge_gold.png"
+ },
+ "dynamite_pack": {
+  "width": 151,
+  "height": 256,
+  "halfWidth": 74.5,
+  "halfHeight": 127.0,
+  "equivalentRadius": 82.1,
+  "fill": 0.548,
+  "aspect": 0.59,
+  "url": "/assets/targets/dynamite_pack.png"
+ },
+ "cowboy_hat": {
+  "width": 256,
+  "height": 202,
+  "halfWidth": 127.0,
+  "halfHeight": 100.0,
+  "equivalentRadius": 100.8,
+  "fill": 0.617,
+  "aspect": 1.267,
+  "url": "/assets/targets/cowboy_hat.png"
+ }
+}

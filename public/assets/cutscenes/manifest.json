@@ -1,0 +1,71 @@
+{
+  "opening": {
+    "1": [
+      "middle_cowboy",
+      "young_cowboy",
+      "young_cowgirl"
+    ],
+    "2": [
+      "middle_cowboy",
+      "young_cowboy",
+      "young_cowgirl"
+    ],
+    "3": [
+      "middle_cowboy",
+      "young_cowboy",
+      "young_cowgirl"
+    ],
+    "4": [
+      "middle_cowboy",
+      "young_cowboy",
+      "young_cowgirl"
+    ],
+    "5": [
+      "middle_cowboy",
+      "young_cowboy",
+      "young_cowgirl"
+    ]
+  },
+  "ending": {
+    "1": [
+      "middle_cowboy_clear",
+      "middle_cowboy_fail",
+      "young_cowboy_clear",
+      "young_cowboy_fail",
+      "young_cowgirl_clear",
+      "young_cowgirl_fail"
+    ],
+    "2": [
+      "middle_cowboy_clear",
+      "middle_cowboy_fail",
+      "young_cowboy_clear",
+      "young_cowboy_fail",
+      "young_cowgirl_clear",
+      "young_cowgirl_fail"
+    ],
+    "3": [
+      "middle_cowboy_clear",
+      "middle_cowboy_fail",
+      "young_cowboy_clear",
+      "young_cowboy_fail",
+      "young_cowgirl_clear",
+      "young_cowgirl_fail"
+    ],
+    "4": [
+      "middle_cowboy_clear",
+      "middle_cowboy_fail",
+      "young_cowboy_clear",
+      "young_cowboy_fail",
+      "young_cowgirl_clear",
+      "young_cowgirl_fail"
+    ],
+    "5": [
+      "middle_cowboy_clear",
+      "middle_cowboy_fail",
+      "young_cowboy_clear",
+      "young_cowboy_fail",
+      "young_cowgirl_clear",
+      "young_cowgirl_fail"
+    ]
+  }
+}
