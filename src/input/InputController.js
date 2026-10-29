@@ -94,6 +94,8 @@ export class InputController {
 
   bindEvents() {
     window.addEventListener('keydown', (e) => {
+      // Typing in a form field (login, My Page) must never trigger game keys
+      if (e.target instanceof Element && e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
       // P (or F8): admin pause. The mouse is captured in the fan during play, so the
       // on-screen PAUSE button cannot be clicked on desktop.
       if (e.key === 'F8' || e.code === 'KeyP') {

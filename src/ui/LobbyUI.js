@@ -1,8 +1,7 @@
 // src/ui/LobbyUI.js
-// Lobby (first screen) + Settings and My Page modals
+// Lobby (first screen) + Settings modal. My Page / Logout live in AccountUI.
 
 import { auth } from '../core/firebase.js';
-import { cloud } from '../core/cloud.js';
 import { saveSystem } from '../core/SaveSystem.js';
 import { soundSynth } from '../audio/SoundSynth.js';
 import { i18n } from '../core/i18n.js';
@@ -15,9 +14,10 @@ const LANGS = [
 ];
 
 export class LobbyUI {
-  constructor(onPlay, onOpenAuth) {
+  constructor(onPlay, onOpenAuth, onOpenMyPage) {
     this.onPlay = onPlay;
     this.onOpenAuth = onOpenAuth;
+    this.onOpenMyPage = onOpenMyPage;
 
     this.el = document.createElement('div');
     this.el.id = 'lobby-screen';
@@ -34,6 +34,9 @@ export class LobbyUI {
       if (this.el.style.display !== 'none') this.render();
     });
     window.addEventListener('claypop_language_changed', () => {
+      if (this.el.style.display !== 'none') this.render();
+    });
+    window.addEventListener('claypop_progress_changed', () => {
       if (this.el.style.display !== 'none') this.render();
     });
   }
@@ -83,7 +86,7 @@ export class LobbyUI {
     });
     q('[data-act="user"]').addEventListener('click', () => {
       soundSynth.playUiClick();
-      if (auth.getUser()) this.openMyPage();
+      if (auth.getUser()) this.onOpenMyPage?.();
       else this.onOpenAuth?.();
     });
     q('[data-act="settings"]').addEventListener('click', () => {
@@ -133,69 +136,6 @@ export class LobbyUI {
         soundSynth.setBgmVolume(bgm);
         soundSynth.setSfxVolume(sfx);
         this.closeModal();
-      });
-    });
-  }
-
-  openMyPage() {
-    const user = auth.getUser();
-    if (!user) return;
-    const t = (k) => i18n.t(k);
-    const idLine = user.email || user.phoneNumber || (user.isAnonymous ? 'Guest' : user.loginType);
-    this.openModal(`
-      <div class="modal-head">${icon('star')}<h2>${t('mypage_title')}</h2>
-        <button type="button" class="round-btn close-btn" data-act="close">✕</button></div>
-      <div class="paper-sheet">
-        <p class="info-line"><b>${t('nickname_label')}</b> ${escapeHtml(user.displayName)}</p>
-        <p class="info-line"><b>ID</b> ${escapeHtml(idLine)} ${auth.isCurrentUserAdmin() ? '<em class="admin-tag">ADMIN</em>' : ''}</p>
-        <label class="field"><span>${t('mypage_change_nick')}</span>
-          <div class="phone-row"><input type="text" name="nick" maxlength="10" placeholder="${escapeHtml(user.displayName)}">
-          <button type="button" class="btn btn-teal" data-act="nick">${t('save')}</button></div>
-        </label>
-        <div class="recent-runs">
-          <b>${t('mypage_recent_runs')}</b>
-          <ul data-runs><li class="muted">${t('mypage_loading')}</li></ul>
-        </div>
-        <div class="btn-row">
-          <button type="button" class="btn btn-cream" data-act="logout">${t('logout')}</button>
-          <button type="button" class="btn btn-red" data-act="delete">${t('mypage_delete_account')}</button>
-        </div>
-      </div>
-    `, (root) => {
-      const list = root.querySelector('[data-runs]');
-      cloud.listRuns(user.uid).then((runs) => {
-        list.innerHTML = runs.length
-          ? runs.map((r) => `<li><span>STAGE ${r.stage} · ${r.clear ? 'CLEAR' : 'FAIL'}</span><b>${Number(r.score).toLocaleString()}</b><small>${r.at ? r.at.toLocaleDateString() : ''}</small></li>`).join('')
-          : `<li class="muted">${t('mypage_no_runs')}</li>`;
-      }).catch(() => {
-        list.innerHTML = `<li class="muted">${t('auth_err_network')}</li>`;
-      });
-
-      root.querySelector('[data-act="nick"]').addEventListener('click', async () => {
-        const nick = root.querySelector('[name="nick"]').value.trim();
-        if (nick.length >= 2 && nick.length <= 10) {
-          await auth.updateNickname(nick);
-          this.closeModal();
-          this.render();
-        }
-      });
-      root.querySelector('[data-act="logout"]').addEventListener('click', async () => {
-        await auth.signOut();
-        this.closeModal();
-        this.render();
-      });
-      root.querySelector('[data-act="delete"]').addEventListener('click', async () => {
-        if (!confirm(t('mypage_delete_warning'))) return;
-        const word = prompt(t('mypage_delete_confirm_step2'));
-        if (word === '탈퇴' || word === 'DELETE' || word === '退会') {
-          try {
-            await auth.deleteAccount();
-          } catch (err) {
-            alert(t(`auth_err_${err.code || 'unknown'}`));
-          }
-          this.closeModal();
-          this.render();
-        }
       });
     });
   }

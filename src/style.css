@@ -24,10 +24,21 @@
   --safe-right: env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 
+  /* Fallbacks only: the active profile in src/config/uxProfiles.js sets these on <body> */
+  --chip-size: 34px;
   --corner-size: 46px;
   --corner-gap: 8px;
+  --topbar-h: 62px;
+  --account-h: 40px;
+  --account-font: 14px;
+  --hud-top: 10px;
+  --hud-plaque-h: 54px;
+  --hud-value: 24px;
+  --hud-label: 11px;
+  --hud-icon: 32px;
+  --hud-track: 86px;
 
-  /* Arc pad base (spec 130 x 90). Scaled per UX profile below. */
+  /* Arc pad base (spec 130 x 90), scaled per profile */
   --arc-base-w: 130px;
   --arc-base-h: 90px;
   --arc-scale: 1;
@@ -38,24 +49,6 @@
 
   --font-display: 'Bungee', 'Noto Sans KR', 'Noto Sans JP', 'Arial Black', sans-serif;
   --font-body: 'Noto Sans KR', 'Noto Sans JP', system-ui, -apple-system, 'Segoe UI', sans-serif;
-}
-
-body[data-ux='desktop'] {
-  --arc-scale: 2;      /* 200% on desktop */
-  --arrow-h: 54px;
-  --arrow-w: 60px;
-}
-
-body[data-ux='landscape'] {
-  --arc-scale: 1.5;    /* 150% on mobile landscape */
-}
-
-body[data-ux='portrait'] {
-  --arc-scale: 1.5;    /* 150% on mobile portrait */
-  --arc-x: 28%;
-  --arrow-x: 72%;
-  --arrow-h: 42px;
-  --arrow-w: 44px;
 }
 
 * {
@@ -474,9 +467,17 @@ select {
   gap: 6px;
 }
 
-.phone-row select {
-  width: 104px;
+.phone-row .cc-input {
+  width: 76px;
   flex: none;
+  padding: 8px 6px;
+  text-align: center;
+  font-weight: 800;
+  background: #FFF3D6;
+}
+
+.phone-row input {
+  min-width: 0;
 }
 
 .form-error {
@@ -560,11 +561,10 @@ select {
 
 /* Sound toggle: small plain speaker glyph so it never reads as a game character */
 .global-sound-btn {
-  --sound-size: 32px;
   left: calc(10px + var(--safe-left));
-  top: calc(10px + var(--safe-top) + (var(--corner-size) - var(--sound-size)) / 2);
-  width: var(--sound-size);
-  height: var(--sound-size);
+  top: calc(10px + var(--safe-top) + (var(--corner-size) - var(--chip-size)) / 2);
+  width: var(--chip-size);
+  height: var(--chip-size);
   min-width: 0;
   padding: 0;
   border: 2px solid rgba(255, 255, 255, 0.85);
@@ -593,10 +593,10 @@ select {
 /* Language toggle (Ko -> En -> Ja): same small round chip, right of the sound button.
    Hidden on the intro and the title screen, which has its own language pills. */
 .global-lang-btn {
-  left: calc(10px + var(--safe-left) + 32px + var(--corner-gap));
-  top: calc(10px + var(--safe-top) + (var(--corner-size) - 32px) / 2);
-  width: 32px;
-  height: 32px;
+  left: calc(10px + var(--safe-left) + var(--chip-size) + var(--corner-gap));
+  top: calc(10px + var(--safe-top) + (var(--corner-size) - var(--chip-size)) / 2);
+  width: var(--chip-size);
+  height: var(--chip-size);
   min-width: 0;
   padding: 0;
   display: none;
@@ -616,12 +616,13 @@ body[data-screen]:not([data-screen='intro']):not([data-screen='lobby']) .global-
   display: inline-flex;
 }
 
-/* Portrait: keep the top-left button row clear of the setup / login / result cards */
-body[data-ux='portrait'] .ui-screen:not(.lobby-screen) {
-  padding-top: calc(10px + var(--safe-top) + var(--corner-size));
+/* Every profile: cards start below the top button row (sound / language / account bar),
+   never under it, and scroll inside themselves instead of running off-screen */
+.ui-screen:is(.auth-screen, .setup-screen, .result-screen) {
+  padding-top: calc(var(--topbar-h) + var(--safe-top));
 }
 
-body[data-ux='portrait'] :is(.auth-card, .setup-card, .result-card) {
+:is(.auth-card, .setup-card, .result-card) {
   max-height: 100%;
 }
 
@@ -631,7 +632,7 @@ body[data-ux='portrait'] :is(.auth-card, .setup-card, .result-card) {
 }
 
 .admin-pause-btn {
-  left: calc(10px + var(--safe-left) + (32px + var(--corner-gap)) * 2);
+  left: calc(10px + var(--safe-left) + (var(--chip-size) + var(--corner-gap)) * 2);
   padding: 0 12px 0 6px;
   background: linear-gradient(#FF8A7A, var(--red));
 }
@@ -817,17 +818,80 @@ body.cutscene-playing .modal-backdrop {
 
 .auth-card {
   width: min(430px, 94vw);
-  max-height: calc(100vh - 20px);
+  display: flex;
+  flex-direction: column;
+  padding-top: 12px;
+}
+
+.auth-sheet {
+  min-height: 0;
   overflow: auto;
-  padding-top: 10px;
+  overscroll-behavior: contain;
 }
 
 .auth-logo {
   display: block;
   margin: 0 auto 8px;
-  width: min(260px, 60vw);
-  max-height: 16vh;
+  width: min(250px, 58vw);
+  max-height: 15vh;
   object-fit: contain;
+  flex: none;
+}
+
+/* Home button (back to the first screen) on the card corner, with a small speech bubble */
+.home-hint {
+  position: absolute;
+  top: -16px;
+  right: -12px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.home-btn {
+  pointer-events: auto;
+  color: var(--wood-dark);
+}
+
+.home-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+.speech-bubble {
+  position: relative;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 0 2px 0 var(--ink);
+  animation: bubbleBob 2.6s ease-in-out infinite;
+}
+
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -7px;
+  width: 10px;
+  height: 10px;
+  margin-top: -5px;
+  background: var(--paper);
+  border-right: 2px solid var(--ink);
+  border-top: 2px solid var(--ink);
+  transform: rotate(45deg);
+}
+
+@keyframes bubbleBob {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-3px); }
 }
 
 .seg-tabs {
@@ -871,12 +935,454 @@ body.cutscene-playing .modal-backdrop {
   font-weight: 900;
 }
 
+.field-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--wood);
+}
+
+/* "처음이면 회원가입": centred wooden-sign link under the login button */
+.signup-link {
+  display: block;
+  margin: 10px auto 0;
+  padding: 6px 14px;
+  border: none;
+  background: none;
+  font-weight: 900;
+  font-size: 15px;
+  color: var(--wood-dark);
+  text-decoration: underline;
+  text-decoration-color: var(--orange);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+.signup-link:active {
+  transform: translateY(1px);
+}
+
+.auth-title {
+  margin: 0 0 4px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 20px;
+  color: var(--wood-dark);
+}
+
+.auth-sub {
+  margin: 0 0 12px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--wood);
+}
+
+.signup-form .auth-title {
+  margin-bottom: 10px;
+}
+
+.choice-btn {
+  min-height: 56px;
+  margin-bottom: 12px;
+  font-size: 17px;
+  justify-content: flex-start;
+  padding-left: 14px;
+}
+
+.choice-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  border: 2px solid var(--ink);
+  flex: none;
+}
+
+.choice-btn.btn-orange .choice-ico { color: #c75a12; }
+.choice-btn.btn-teal .choice-ico { color: #157f97; }
+
+.choice-ico svg {
+  width: 20px;
+  height: 20px;
+}
+
+.guest-box {
+  margin-bottom: 4px;
+}
+
+.guest-box .guest-row {
+  margin-bottom: 2px;
+}
+
+.auth-cols {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Desktop / landscape: login form and guest / Google side by side so nothing needs scrolling;
+   landscape phones also drop the logo and field captions (placeholders carry them) */
+body[data-ux='desktop'] .auth-card[data-view='login'] {
+  width: min(760px, 94vw);
+}
+
 body[data-ux='landscape'] .auth-card {
-  width: min(560px, 94vw);
+  width: min(720px, 94vw);
+  padding: 12px;
 }
 
 body[data-ux='landscape'] .auth-logo {
-  max-height: 12vh;
+  display: none;
+}
+
+body:not([data-ux='portrait']) .auth-cols {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+body:not([data-ux='portrait']) .auth-or {
+  flex-direction: column;
+  align-self: stretch;
+  margin: 0;
+}
+
+body:not([data-ux='portrait']) .auth-or::before,
+body:not([data-ux='portrait']) .auth-or::after {
+  width: 2px;
+  height: auto;
+  min-height: 16px;
+}
+
+body[data-ux='landscape'] .auth-sheet .field > span:first-child {
+  display: none;
+}
+
+body[data-ux='landscape'] .auth-sheet .field {
+  margin-bottom: 8px;
+}
+
+body[data-ux='landscape'] .auth-sheet .seg {
+  min-height: 34px;
+}
+
+body[data-ux='landscape'] .auth-sheet .seg-tabs {
+  margin-bottom: 8px;
+}
+
+body[data-ux='landscape'] .auth-sheet .form-error {
+  margin: 0 0 4px;
+}
+
+body[data-ux='landscape'] .signup-link {
+  margin-top: 4px;
+}
+
+body[data-ux='landscape'] .signup-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 12px;
+}
+
+body[data-ux='landscape'] .signup-form > :is(.auth-title, .id-field, .form-error, .btn, .signup-link) {
+  grid-column: 1 / -1;
+}
+
+body[data-ux='landscape'] .signup-choice {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 12px;
+}
+
+body[data-ux='landscape'] .signup-choice > :is(.auth-title, .auth-sub, .signup-link) {
+  grid-column: 1 / -1;
+}
+
+body[data-ux='portrait'] .auth-logo {
+  max-height: 11vh;
+}
+
+/* ==========================================================================
+   Account bar (top-right, signed in: lobby / setup / result) + My Page
+   ========================================================================== */
+
+.account-bar {
+  position: fixed;
+  top: calc(10px + var(--safe-top) + (var(--corner-size) - var(--account-h)) / 2);
+  right: calc(10px + var(--safe-right));
+  z-index: 75;
+  display: none;
+  gap: 8px;
+}
+
+body.signed-in:is([data-screen='lobby'], [data-screen='setup'], [data-screen='result']) .account-bar {
+  display: flex;
+}
+
+body.cutscene-playing .account-bar,
+body.mypage-open .account-bar {
+  display: none !important;
+}
+
+.acct-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--account-h);
+  padding: 0 12px 0 8px;
+  font-family: var(--font-body);
+  font-weight: 900;
+  font-size: var(--account-font);
+  white-space: nowrap;
+  color: var(--ink);
+  background: linear-gradient(#FFF8E6, #E8C98E);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 0 3px 0 var(--ink);
+  cursor: pointer;
+}
+
+.acct-btn svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.acct-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+
+.acct-logout {
+  background: linear-gradient(#FFB4A4, #F07A62);
+}
+
+.mypage-card {
+  width: min(460px, 94vw);
+  display: flex;
+  flex-direction: column;
+}
+
+.mypage-sheet {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+/* Desktop / landscape: account + password on the left, nickname + records on the right */
+body:not([data-ux='portrait']) .mypage-card {
+  width: min(820px, 94vw);
+}
+
+body:not([data-ux='portrait']) .mypage-sheet {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+body:not([data-ux='portrait']) .mypage-sheet .nick-field {
+  margin-top: 0;
+}
+
+/* Modals sit below the top button row; their close button lives inside the header so a
+   scrolling card never clips it */
+.modal-backdrop {
+  padding: calc(var(--topbar-h) + var(--safe-top)) 16px calc(8px + var(--safe-bottom));
+}
+
+.modal-head .close-btn {
+  position: static;
+  margin-left: auto;
+  flex: none;
+}
+
+body[data-ux='landscape'] .modal-card {
+  max-height: 100%;
+}
+
+body[data-ux='landscape'] .profile-head .avatar {
+  width: 44px;
+  height: 44px;
+}
+
+.profile-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.profile-head .avatar {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+  overflow: hidden;
+  background: var(--sky);
+  flex: none;
+}
+
+.profile-head .avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 8%;
+  transform: scale(1.8) translateY(18%);
+}
+
+.profile-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.profile-name b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 20px;
+  overflow-wrap: anywhere;
+}
+
+.type-badge {
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 900;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--brass-light);
+}
+
+.type-badge.type-guest { background: #E3D6FF; }
+.type-badge.type-google { background: #D7E8FF; }
+.type-badge.type-phone { background: #CFF3EA; }
+
+.mypage-stats {
+  margin-bottom: 10px;
+}
+
+.mypage-stats .plaque {
+  flex: 1;
+  min-width: 150px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  align-items: center;
+  margin: 0 0 4px;
+  padding: 10px 12px;
+  background: rgba(43, 23, 0, 0.06);
+  border: 2px dashed rgba(43, 23, 0, 0.3);
+  border-radius: 10px;
+}
+
+.info-grid dt {
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--wood);
+}
+
+.info-grid dd {
+  margin: 0;
+  min-width: 0;
+  font-weight: 800;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.pw-cell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pw-mask {
+  letter-spacing: 2px;
+  font-size: 12px;
+}
+
+.muted-text {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--wood);
+}
+
+.pw-form {
+  margin: 8px 0 4px;
+  padding: 10px;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: #FFF3D6;
+}
+
+.form-error.ok {
+  color: #1F8A3B;
+}
+
+.nick-field {
+  margin-top: 10px;
+}
+
+.nick-field .phone-row .btn {
+  flex: none;
+  min-height: 44px;
+}
+
+.mypage-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.mypage-foot .btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.danger-link {
+  color: var(--red);
+  font-size: 13px;
+}
+
+.guest-expiry {
+  margin-top: 8px;
+}
+
+.confirm-backdrop {
+  z-index: 96;
+}
+
+.confirm-card {
+  width: min(380px, 92vw);
+}
+
+.confirm-msg {
+  margin: 0 0 10px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.confirm-word {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  font-size: 16px;
+  border: 3px solid var(--ink);
+  border-radius: 10px;
 }
 
 /* ==========================================================================
@@ -888,21 +1394,40 @@ body[data-ux='landscape'] .auth-logo {
   justify-content: space-between;
 }
 
+/* Desktop / landscape: one row = [sound] [user chip][settings] ........ [My Page][Logout] (fixed)
+   Portrait: row 1 = [sound] ... [My Page][Logout], row 2 = [user chip] ... [settings] */
 .lobby-top {
   position: relative;
   z-index: 2;
   width: 100%;
+  min-height: var(--corner-size);
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   align-items: center;
   gap: 10px;
+  padding-left: calc(var(--chip-size) + var(--corner-gap));
+}
+
+body.signed-in .lobby-top {
+  padding-right: 250px;
+}
+
+body[data-ux='portrait'] .lobby-top {
+  margin-top: calc(var(--topbar-h) - 10px);
+  padding: 0;
+  justify-content: space-between;
+}
+
+body[data-ux='portrait'] .user-chip {
+  max-width: calc(100% - 60px);
 }
 
 .user-chip {
   display: flex;
   align-items: center;
   gap: 8px;
-  max-width: 60vw;
+  min-width: 0;
+  max-width: 100%;
   padding: 4px 14px 4px 4px;
   border: 3px solid var(--ink);
   border-radius: 999px;
@@ -931,6 +1456,7 @@ body[data-ux='landscape'] .auth-logo {
 }
 
 .user-chip .who {
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1096,7 +1622,10 @@ body[data-ux='landscape'] .lobby-center {
 
 .toast {
   position: fixed;
-  top: calc(14px + var(--safe-top));
+  top: calc(var(--topbar-h) + var(--safe-top));
+  max-width: 92vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
   left: 50%;
   transform: translateX(-50%);
   z-index: 70;
@@ -1118,7 +1647,7 @@ body[data-ux='landscape'] .lobby-center {
 
 .setup-card {
   width: min(1000px, 96vw);
-  max-height: calc(100vh - 20px);
+  max-height: 100%;
   display: flex;
   flex-direction: column;
   padding: 12px;
@@ -1335,7 +1864,7 @@ body[data-ux='portrait'] .stage-grid {
 
 .result-card {
   width: min(560px, 94vw);
-  max-height: calc(100vh - 20px);
+  max-height: 100%;
   overflow: auto;
 }
 
@@ -1648,8 +2177,80 @@ body[data-ux='portrait'] .result-screen.is-settled {
 }
 
 body[data-ux='portrait'] .result-screen .result-card {
-  max-height: calc(100vh - var(--hero-band) - 10px - var(--safe-top) - var(--corner-size) - 6px);
+  max-height: calc(100vh - var(--hero-band) - var(--safe-top) - var(--topbar-h));
   padding: 10px;
+}
+
+/* Landscape phones: compact head, score + tiles beside the replay strip, buttons always visible */
+body[data-ux='landscape'] .result-screen {
+  --rc-w: min(600px, 58vw);
+  padding-bottom: calc(8px + var(--safe-bottom));
+}
+
+body[data-ux='landscape'] .result-screen .result-card {
+  padding: 10px 12px;
+  overflow: auto;
+}
+
+body[data-ux='landscape'] .result-head {
+  margin-bottom: 6px;
+}
+
+body[data-ux='landscape'] .result-head h2 {
+  font-size: 24px;
+}
+
+body[data-ux='landscape'] .result-portrait {
+  width: 46px;
+  height: 46px;
+}
+
+body[data-ux='landscape'] .result-card .paper-sheet {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 8px;
+}
+
+body[data-ux='landscape'] .result-card .score-spot {
+  margin: 0;
+}
+
+body[data-ux='landscape'] .result-card .score-spot .ui-icon {
+  width: 36px;
+  height: 36px;
+}
+
+body[data-ux='landscape'] .result-card .score-spot b {
+  font-size: 28px;
+}
+
+body[data-ux='landscape'] .result-card .stat-tiles {
+  grid-column: 1;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+}
+
+body[data-ux='landscape'] .result-card .stat-tiles div {
+  padding: 2px 4px;
+}
+
+body[data-ux='landscape'] .result-card .shorts-card {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  margin: 0;
+  align-self: center;
+}
+
+body[data-ux='landscape'] .result-card .btn-row {
+  margin-top: 8px;
+  flex-wrap: nowrap;
+}
+
+body[data-ux='landscape'] .result-card .btn-row .btn {
+  min-height: 40px;
+  padding: 4px 10px;
+  font-size: 13px;
 }
 
 body[data-ux='portrait'] .result-portrait {
@@ -1737,25 +2338,30 @@ body[data-ux='portrait'] .stat-tiles {
   pointer-events: none;
 }
 
+/* Desktop / landscape: one row after [sound][lang]([PAUSE]).
+   Portrait: row 1 keeps the buttons, row 2 (--hud-top) holds three equal, full-size plaques. */
 .hud-bar {
   position: absolute;
-  top: calc(10px + var(--safe-top));
+  top: calc(var(--hud-top) + var(--safe-top));
   left: 0;
   right: 0;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
-  padding: 0 calc(10px + var(--safe-right)) 0 calc(10px + var(--safe-left) + (32px + var(--corner-gap)) * 2);
+  padding: 0 calc(10px + var(--safe-right)) 0 calc(10px + var(--safe-left) + (var(--chip-size) + var(--corner-gap)) * 2);
 }
 
 body.admin-in-game .hud-bar {
-  padding-left: calc(10px + var(--safe-left) + (32px + var(--corner-gap)) * 2 + 124px);
+  padding-left: calc(10px + var(--safe-left) + (var(--chip-size) + var(--corner-gap)) * 2 + 124px);
 }
 
+body[data-ux='portrait'] .hud-bar,
 body[data-ux='portrait'].admin-in-game .hud-bar {
-  top: calc(10px + var(--safe-top) + var(--corner-size) + 8px);
-  padding-left: calc(10px + var(--safe-left));
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: 0 calc(8px + var(--safe-right)) 0 calc(8px + var(--safe-left));
 }
 
 .hud-plaque {
@@ -1763,7 +2369,7 @@ body[data-ux='portrait'].admin-in-game .hud-bar {
   display: flex;
   align-items: center;
   gap: 6px;
-  height: 46px;
+  height: var(--hud-plaque-h);
   padding: 3px 12px 3px 6px;
   background: linear-gradient(rgba(62, 36, 16, 0.92), rgba(43, 23, 0, 0.92));
   border: 2px solid var(--brass);
@@ -1779,7 +2385,7 @@ body[data-ux='portrait'].admin-in-game .hud-bar {
 }
 
 .hud-plaque small {
-  font-size: 10px;
+  font-size: var(--hud-label);
   font-weight: 800;
   opacity: 0.8;
 }
@@ -1787,13 +2393,13 @@ body[data-ux='portrait'].admin-in-game .hud-bar {
 .hud-plaque b {
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 20px;
+  font-size: var(--hud-value);
   color: var(--brass-light);
 }
 
 .hud-score .ui-icon {
-  width: 32px;
-  height: 32px;
+  width: var(--hud-icon);
+  height: var(--hud-icon);
 }
 
 .combo-badge {
@@ -1815,19 +2421,19 @@ body[data-ux='portrait'].admin-in-game .hud-bar {
 }
 
 .timer-star {
-  width: 34px !important;
-  height: 34px !important;
+  width: var(--hud-icon) !important;
+  height: var(--hud-icon) !important;
 }
 
 .hud-timer b {
-  font-size: 22px;
+  font-size: calc(var(--hud-value) + 2px);
   text-align: center;
   color: #fff;
 }
 
 .timer-track,
 .fever-track {
-  width: 86px;
+  width: var(--hud-track);
   height: 7px;
   margin-top: 3px;
   background: rgba(0, 0, 0, 0.5);
@@ -1871,7 +2477,7 @@ body[data-ux='portrait'].admin-in-game .hud-bar {
 
 .hud-fever small {
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: var(--hud-label);
   color: var(--brass-light);
 }
 
@@ -1916,34 +2522,28 @@ body[data-ux='portrait'].admin-in-game .hud-bar {
   animation: pulse 0.9s ease-in-out infinite;
 }
 
-body[data-ux='portrait'] .hud-plaque small {
-  display: none;
-}
-
+/* Portrait row 2: each plaque fills a third of the width; values stay large enough to read */
 body[data-ux='portrait'] .hud-plaque {
-  height: 40px;
-  padding: 2px 8px 2px 4px;
+  min-width: 0;
+  padding: 3px 8px 3px 5px;
 }
 
-body[data-ux='portrait'] .hud-plaque b {
-  font-size: 17px;
+body[data-ux='portrait'] .hud-col {
+  flex: 1;
+  min-width: 0;
 }
 
-body[data-ux='portrait'] .timer-track,
-body[data-ux='portrait'] .fever-track {
-  width: 60px;
+body[data-ux='portrait'] .hud-fever .fever-pips {
+  width: 100%;
 }
 
 body[data-ux='portrait'] .fever-pips i {
-  width: 9px;
+  flex: 1;
+  width: auto;
 }
 
-body[data-ux='desktop'] .hud-plaque {
-  height: 54px;
-}
-
-body[data-ux='desktop'] .hud-plaque b {
-  font-size: 24px;
+body[data-ux='portrait'] .combo-badge {
+  right: -4px;
 }
 
 /* ==========================================================================

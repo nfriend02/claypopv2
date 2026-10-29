@@ -7,30 +7,56 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == uid;
     }
 
+    // Guest documents carry expireAt; a TTL policy deletes them after it passes (100 days)
+    function validExpiry(data) {
+      return !('expireAt' in data) || data.expireAt is timestamp;
+    }
+
     // users/{uid}: profile + progress, only the owner may read / write / delete it
     match /users/{uid} {
       allow read, delete: if isOwner(uid);
       allow create, update: if isOwner(uid)
         && request.resource.data.keys().hasOnly(
-          ['displayName', 'loginType', 'email', 'phoneNumber', 'isAnonymous', 'createdAt', 'updatedAt', 'progress'])
+          ['displayName', 'loginType', 'email', 'phoneNumber', 'isAnonymous', 'createdAt', 'updatedAt', 'progress', 'expireAt'])
         && (!('displayName' in request.resource.data)
           || (request.resource.data.displayName is string && request.resource.data.displayName.size() <= 40))
-        && (!('progress' in request.resource.data) || request.resource.data.progress is map);
+        && (!('progress' in request.resource.data) || request.resource.data.progress is map)
+        && validExpiry(request.resource.data);
 
       // One document per finished stage; records are immutable once written
       match /runs/{runId} {
         allow read, delete: if isOwner(uid);
         allow create: if isOwner(uid)
           && request.resource.data.keys().hasOnly(
-            ['stage', 'character', 'mode', 'score', 'hits', 'shots', 'maxCombo', 'clear', 'at'])
+            ['stage', 'character', 'mode', 'score', 'hits', 'shots', 'maxCombo', 'clear', 'at', 'expireAt'])
           && request.resource.data.stage is int
           && request.resource.data.stage >= 1 && request.resource.data.stage <= 5
           && request.resource.data.score is int
           && request.resource.data.score >= 0 && request.resource.data.score < 10000000
           && request.resource.data.clear is bool
-          && request.resource.data.at == request.time;
+          && request.resource.data.at == request.time
+          && validExpiry(request.resource.data);
         allow update: if false;
       }
+    }
+
+    // guestNicknames/{key}: nickname held by an active guest. Anyone signed in may check a name;
+    // only the holder may release it, and a name is re-claimable once released or expired.
+    match /guestNicknames/{key} {
+      function validClaim() {
+        return request.resource.data.keys().hasOnly(['uid', 'nickname', 'expireAt'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.nickname is string
+          && request.resource.data.nickname.size() >= 2
+          && request.resource.data.nickname.size() <= 10
+          && request.resource.data.expireAt is timestamp;
+      }
+
+      allow get: if request.auth != null;
+      allow create: if request.auth != null && validClaim();
+      allow update: if request.auth != null && validClaim()
+        && (resource.data.uid == request.auth.uid || resource.data.expireAt < request.time);
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
     }
 
     match /{document=**} {

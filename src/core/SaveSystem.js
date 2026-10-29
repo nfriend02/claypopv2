@@ -89,9 +89,18 @@ export class SaveSystem {
     }
   }
 
+  // Cancels a queued cloud sync; true if one was waiting (the caller flushes it)
+  takePendingSync() {
+    if (!this.syncTimer) return false;
+    clearTimeout(this.syncTimer);
+    this.syncTimer = null;
+    return true;
+  }
+
   requestCloudSync() {
     if (this.syncTimer) clearTimeout(this.syncTimer);
     this.syncTimer = setTimeout(() => {
+      this.syncTimer = null;
       window.dispatchEvent(new CustomEvent('claypop_request_cloud_sync', { detail: this.data }));
     }, 1500); // 1.5s debounce as mandated in Form_1_7
   }
@@ -105,7 +114,34 @@ export class SaveSystem {
       settings.sfxEnabled = this.data.settings.sfxEnabled;
       this.data = { ...this.data, ...cloudData, settings };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
+      this.notifyProgress();
     }
+  }
+
+  // Progress belongs to one account: a different (or no) user starts from defaults.
+  // Session settings (sound, volumes) carry over; nothing is pushed to the cloud.
+  resetProgress(ownerUid = null) {
+    this.takePendingSync();
+    const settings = this.data.settings;
+    this.data = { ...this.getDefaultData(), settings, ownerUid };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
+    this.notifyProgress();
+  }
+
+  // Replace local progress with the account's cloud copy (keeps this session's sound flags)
+  adoptCloud(cloudData, ownerUid) {
+    this.takePendingSync();
+    const settings = { ...this.data.settings, ...cloudData.settings };
+    settings.bgmEnabled = this.data.settings.bgmEnabled;
+    settings.sfxEnabled = this.data.settings.sfxEnabled;
+    settings.userExplicitlyUnmuted = this.data.settings.userExplicitlyUnmuted;
+    this.data = { ...this.getDefaultData(), ...cloudData, settings, ownerUid };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
+    this.notifyProgress();
+  }
+
+  notifyProgress() {
+    window.dispatchEvent(new CustomEvent('claypop_progress_changed', { detail: this.data }));
   }
 
   resetAll() {

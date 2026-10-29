@@ -24,6 +24,8 @@ import { GameSetupUI } from '../ui/GameSetupUI.js';
 import { HudUI } from '../ui/HudUI.js';
 import { ResultUI } from '../ui/ResultUI.js';
 import { AdminPauseButton } from '../ui/AdminPauseButton.js';
+import { AccountUI } from '../ui/AccountUI.js';
+import { showToast } from '../ui/dom.js';
 import { StageCutscene, cutsceneUrl } from '../ui/StageCutscene.js';
 
 const FIRE_COOLDOWN = 0.28;
@@ -54,8 +56,13 @@ export class HybridGameManager {
 
     this.introUI = new IntroCutscene(this.gameContainer, () => this.onIntroComplete());
     this.cutscene = new StageCutscene();
-    this.authUI = new AuthUI((user) => this.onAuthSuccess(user), () => this.onAuthCancel());
-    this.lobbyUI = new LobbyUI(() => this.onLobbyPlayClick(), () => this.openAuth());
+    this.accountUI = new AccountUI({ onLoggedOut: () => this.onLoggedOut() });
+    this.authUI = new AuthUI((user, meta) => this.onAuthSuccess(user, meta), () => this.onAuthCancel());
+    this.lobbyUI = new LobbyUI(
+      () => this.onLobbyPlayClick(),
+      () => this.openAuth(),
+      () => this.accountUI.openMyPage()
+    );
     this.setupUI = new GameSetupUI(
       (char, mode, stage) => this.startGameplay(char, mode, stage),
       () => this.onSetupBackClick()
@@ -123,11 +130,32 @@ export class HybridGameManager {
     this.lobbyUI.show();
   }
 
-  onAuthSuccess(user) {
+  // New sign-ups land on the first screen; logins continue to game setup
+  onAuthSuccess(user, meta = {}) {
+    this.refreshAdminUI();
+    if (meta.signup) {
+      gameState.setState(GameStates.LOBBY);
+      this.lobbyUI.show();
+      showToast(i18n.t('signup_success', { name: user.displayName }));
+      return;
+    }
     this.lobbyUI.hide();
     gameState.setState(GameStates.SETUP);
     this.setupUI.show(i18n.t('login_success', { name: user.displayName }));
+  }
+
+  // Logout from the lobby, setup or result screen always returns to the first screen
+  onLoggedOut() {
+    const s = gameState.currentState;
+    if (s === GameStates.SETUP) this.setupUI.hide();
+    if (s === GameStates.RESULT) {
+      this.resultUI.hide();
+      this.onLobbyReturnClick();
+      return;
+    }
+    gameState.setState(GameStates.LOBBY);
     this.refreshAdminUI();
+    this.lobbyUI.show();
   }
 
   onSetupBackClick() {
@@ -340,7 +368,7 @@ export class HybridGameManager {
       shots: gameState.totalShots,
       maxCombo: gameState.maxCombo,
       clear: isClear
-    }).catch((err) => console.warn('[CloudSave] run record failed:', err.code || err));
+    }, { guest: user.isAnonymous }).catch((err) => console.warn('[CloudSave] run record failed:', err.code || err));
   }
 
   onNextStageClick() {
@@ -363,6 +391,7 @@ export class HybridGameManager {
     this.input.setVisible(false);
     this.stageManager.clearAllTargets();
     this.overlay.setView(null);
+    this.resultUI.hide();
     gameState.setState(GameStates.LOBBY);
     this.refreshAdminUI();
     this.lobbyUI.show();
