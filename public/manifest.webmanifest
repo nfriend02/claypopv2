@@ -1,15 +1,27 @@
 {
+  "id": "/",
   "name": "Claypop Version 2",
   "short_name": "Claypop2",
   "description": "3D Comic Arcade Clay Shooting Game in 1960s Texas",
   "start_url": "/",
-  "display": "standalone",
+  "scope": "/",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
   "orientation": "any",
   "background_color": "#1a0f07",
   "theme_color": "#3E2723",
+  "categories": ["games", "entertainment"],
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "/icons/desktop/icon-64.png", "sizes": "64x64", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/desktop/icon-128.png", "sizes": "128x128", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/desktop/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/desktop/icon-256.png", "sizes": "256x256", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/desktop/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/mobile/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/mobile/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "screenshots": [
+    { "src": "/icons/screenshots/wide-lobby.jpg", "sizes": "1280x720", "type": "image/jpeg", "form_factor": "wide", "label": "Claypop Version 2 lobby" },
+    { "src": "/icons/screenshots/narrow-lobby.jpg", "sizes": "780x1688", "type": "image/jpeg", "form_factor": "narrow", "label": "Claypop Version 2 on mobile" }
   ]
 }

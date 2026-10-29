@@ -6,7 +6,7 @@ export const STRINGS = {
     // App & Common
     app_title: "클레이팝 버전 2",
     app_subtitle: "3D 아케이드 클레이 슈팅 게임",
-    skip_intro: "건너뛰기 ⏭",
+    skip_intro: "Skip ⏭",
     loading: "로딩 중...",
     confirm: "확인",
     cancel: "취소",
@@ -209,7 +209,7 @@ export const STRINGS = {
     // App & Common
     app_title: "Claypop Version 2",
     app_subtitle: "3D Arcade Clay Shooting Game",
-    skip_intro: "SKIP ⏭",
+    skip_intro: "Skip ⏭",
     loading: "Loading...",
     confirm: "Confirm",
     cancel: "Cancel",
@@ -412,7 +412,7 @@ export const STRINGS = {
     // App & Common
     app_title: "クレイポップ バージョン2",
     app_subtitle: "3D アーケード クレイシューティング",
-    skip_intro: "スキップ ⏭",
+    skip_intro: "Skip ⏭",
     loading: "読み込み中...",
     confirm: "確認",
     cancel: "キャンセル",
