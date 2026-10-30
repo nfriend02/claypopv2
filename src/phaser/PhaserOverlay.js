@@ -128,9 +128,19 @@ export class PhaserOverlay {
 
   // ---------- Frame ----------
 
+  // Phaser's RESIZE mode can miss an orientation change (the canvas keeps the portrait size and the
+  // hero, drawn in landscape coordinates, lands off-canvas), so follow the container every frame.
+  syncSize() {
+    const w = this.container.clientWidth || window.innerWidth;
+    const h = this.container.clientHeight || window.innerHeight;
+    const scale = this.game.scale;
+    if (w > 0 && h > 0 && (scale.width !== w || scale.height !== h)) scale.resize(w, h);
+  }
+
   tick(realDt) {
     const scene = this.scene;
     if (!scene) return;
+    this.syncSize();
     const dt = this.paused ? 0 : realDt;
     const v = this.view;
 

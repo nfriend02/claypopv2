@@ -171,6 +171,7 @@ export class HybridGameManager {
 
   async startGameplay(charId, modeId, stageNumber) {
     if (this.cutscene.active) return;
+    this.lobbyUI.hide();
     this.setupUI.hide();
     this.resultUI.hide();
     this.setPaused(false);
