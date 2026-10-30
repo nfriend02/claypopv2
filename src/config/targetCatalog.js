@@ -15,7 +15,7 @@ export const SIZE_LEVEL_SCALE = { 1: 1.4, 2: 1.2, 3: 1.0, 4: 0.8, 5: 0.6 };
 
 // Visual size relative to the previous 0.744 m silhouette, and hit zone relative to the previous zone
 export const TARGET_VISUAL_SCALE = 0.7;
-export const HIT_ZONE_EASE = 1.5 * 1.2;
+export const HIT_ZONE_EASE = 1.5 * 1.2 * 1.2;
 
 // Base world radius (meters) of a size-3 target's visible silhouette
 export const BASE_WORLD_RADIUS = 0.62 * 1.2 * TARGET_VISUAL_SCALE;
@@ -29,6 +29,8 @@ const HIT_ZONE_SCALE = HIT_ZONE_EASE / TARGET_VISUAL_SCALE;
  *   R      = visible silhouette radius on screen (area-equivalent radius of the sprite) * radiusScale
  *   lead   = (M - C) . V_hat           must satisfy leadMin*R <= lead <= leadMax*R
  *   perp   = |(M - C) x V_hat|         must satisfy perp <= perpRatio*R   (spec: R/2)
+ *   nose   = |M - (C + V_hat*leadMax*R)|  also a hit when nose <= noseRatio*R (a disc on the front tip,
+ *            so shots just ahead of the leading edge count)
  *   perfect lead when lead is inside [perfectMin*R, perfectMax*R]
  * Targets slower than stillSpeedPx px/s are treated as stationary: |M - C| <= R.
  */
@@ -37,6 +39,7 @@ export const HIT_DEFAULTS = {
   leadMin: 0.0,
   leadMax: 1.0,
   perpRatio: 0.5,
+  noseRatio: 0.5,
   perfectMin: 0.35,
   perfectMax: 0.85,
   minRadiusPx: 14,

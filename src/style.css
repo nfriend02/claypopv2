@@ -1464,6 +1464,12 @@ body[data-ux='landscape'] .profile-head .avatar {
   padding-right: 46px;
 }
 
+/* Edge's own reveal button would be a second eye with its own state */
+.pw-wrap input::-ms-reveal,
+.pw-wrap input::-ms-clear {
+  display: none;
+}
+
 .pw-eye {
   position: absolute;
   top: 50%;

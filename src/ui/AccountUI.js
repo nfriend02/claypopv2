@@ -226,6 +226,7 @@ export class AccountUI {
     q('[data-act="pw-toggle"]')?.addEventListener('click', () => {
       soundSynth.playUiClick();
       pwForm.hidden = !pwForm.hidden;
+      if (pwForm.hidden) pwForm.reset();
       q('.mypage-card').classList.toggle('pw-mode', !pwForm.hidden);
       if (!pwForm.hidden) pwForm.querySelector('[name="current"]').focus();
     });

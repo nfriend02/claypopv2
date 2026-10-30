@@ -282,6 +282,8 @@ export class PhaserOverlay {
         g.fillPoints(p.map(([x, y]) => new Phaser.Math.Vector2(x, y)), true);
       };
       quad(t.leadMin * R, t.leadMax * R, t.perpRatio * R, 0x00FF66, 0.28);
+      g.fillStyle(0x00FF66, 0.28);
+      g.fillCircle(t.x + ux * t.leadMax * R, t.y + uy * t.leadMax * R, t.noseRatio * R);
       quad(t.perfectMin * R, t.perfectMax * R, t.perpRatio * R, 0xFFE600, 0.32);
 
       g.lineStyle(2, 0x00E0FF, 1);

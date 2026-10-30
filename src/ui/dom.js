@@ -6,10 +6,12 @@ import { i18n } from '../core/i18n.js';
 const EYE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3.2"/></svg>';
 const EYE_OFF_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3.2"/><path d="M4 20 20 4"/></svg>';
 
-// Eye button inside every password field under `root`: shows / hides what was typed
+// Eye button inside every password field under `root`: shows / hides what was typed. Fields always
+// start masked; the icon shows the current state (slashed eye = masked, open eye = visible).
 export function addPasswordToggles(root) {
   root.querySelectorAll('input[type="password"]').forEach((input) => {
     if (input.parentElement.classList.contains('pw-wrap')) return;
+    input.type = 'password';
     const wrap = document.createElement('span');
     wrap.className = 'pw-wrap';
     input.replaceWith(wrap);
@@ -19,7 +21,7 @@ export function addPasswordToggles(root) {
     btn.tabIndex = -1;
     const sync = () => {
       const shown = input.type === 'text';
-      btn.innerHTML = shown ? EYE_OFF_SVG : EYE_SVG;
+      btn.innerHTML = shown ? EYE_SVG : EYE_OFF_SVG;
       btn.setAttribute('aria-pressed', String(shown));
       btn.setAttribute('aria-label', i18n.t(shown ? 'hide_password' : 'show_password'));
       btn.title = btn.getAttribute('aria-label');
@@ -29,6 +31,10 @@ export function addPasswordToggles(root) {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
       input.type = input.type === 'password' ? 'text' : 'password';
+      sync();
+    });
+    input.form?.addEventListener('reset', () => {
+      input.type = 'password';
       sync();
     });
     sync();
