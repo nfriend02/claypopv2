@@ -88,6 +88,11 @@ export const STRINGS = {
 
     // Game Setup
     setup_title: "사격 준비 (Game Setup)",
+    hand_right: "오른손잡이 모드 (오른손 조준 · 왼손 이동)",
+    hand_left: "왼손잡이 모드 (왼손 조준 · 오른손 이동)",
+    hand_toggle_hint: "누르면 반대손 모드로 바뀌어요",
+    show_password: "비밀번호 보기",
+    hide_password: "비밀번호 숨기기",
     select_character: "주인공 캐릭터 선택",
     select_clay_mode: "클레이 비행 모드",
     select_stage: "스테이지 선택",
@@ -291,6 +296,11 @@ export const STRINGS = {
 
     // Game Setup
     setup_title: "Shooting Range Setup",
+    hand_right: "Right-handed (aim right · move left)",
+    hand_left: "Left-handed (aim left · move right)",
+    hand_toggle_hint: "Tap to switch hands",
+    show_password: "Show password",
+    hide_password: "Hide password",
     select_character: "Select Cowboy",
     select_clay_mode: "Clay Trajectory Mode",
     select_stage: "Select Stage",
@@ -494,6 +504,11 @@ export const STRINGS = {
 
     // Game Setup
     setup_title: "射撃準備 (Game Setup)",
+    hand_right: "右利きモード（右手で照準・左手で移動）",
+    hand_left: "左利きモード（左手で照準・右手で移動）",
+    hand_toggle_hint: "タップで反対の手に切り替え",
+    show_password: "パスワードを表示",
+    hide_password: "パスワードを隠す",
     select_character: "キャラクター選択",
     select_clay_mode: "クレイ飛行モード",
     select_stage: "ステージ選択",

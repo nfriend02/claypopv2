@@ -5,6 +5,7 @@ import { saveSystem } from '../core/SaveSystem.js';
 import { soundSynth } from '../audio/SoundSynth.js';
 import { i18n } from '../core/i18n.js';
 import { escapeHtml } from './dom.js';
+import { handButtonHtml } from './HandButton.js';
 
 const CHARACTERS = [
   { id: 'young_cowboy', color: '#D24625', speed: 3, lead: 3 },
@@ -51,7 +52,7 @@ export class GameSetupUI {
         <header class="setup-head">
           <button type="button" class="btn btn-cream btn-small" data-act="back">◀ ${t('back')}</button>
           <h2>${t('setup_title')}</h2>
-          <span class="head-spacer"></span>
+          ${handButtonHtml()}
         </header>
 
         <div class="setup-scroll">

@@ -7,7 +7,8 @@ import { cloud } from '../core/cloud.js';
 import { saveSystem } from '../core/SaveSystem.js';
 import { soundSynth } from '../audio/SoundSynth.js';
 import { i18n } from '../core/i18n.js';
-import { escapeHtml, icon } from './dom.js';
+import { addPasswordToggles, escapeHtml, icon } from './dom.js';
+import { handButtonHtml } from './HandButton.js';
 
 const USER_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4.2" fill="currentColor"/><path d="M3.8 21c.6-4.6 4-7 8.2-7s7.6 2.4 8.2 7z" fill="currentColor"/></svg>`;
 const EXIT_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5.5A1.5 1.5 0 0 0 4 5.5v13A1.5 1.5 0 0 0 5.5 20H10" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M14.5 7.5 19 12l-4.5 4.5M19 12H9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -144,6 +145,7 @@ export class AccountUI {
             <span class="avatar"><img src="${avatar}" alt="" draggable="false"></span>
             <div class="profile-name">
               <b>${escapeHtml(user.displayName)}</b>
+              ${handButtonHtml('small')}
               <span class="type-badge type-${user.loginType}">${t(`login_type_${user.loginType}`)}</span>
               ${auth.isCurrentUserAdmin() ? '<em class="admin-tag">ADMIN</em>' : ''}
             </div>
@@ -197,6 +199,7 @@ export class AccountUI {
     this.modal.style.display = 'flex';
     document.body.classList.add('mypage-open');
     this.bindMyPage(user);
+    addPasswordToggles(this.modal);
   }
 
   bindMyPage(user) {

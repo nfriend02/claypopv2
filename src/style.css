@@ -1222,7 +1222,7 @@ body:not([data-ux='desktop']) .recent-runs li:nth-child(n + 4) {
   display: none;
 }
 
-body:not([data-ux='desktop']) .pw-form .field > span {
+body:not([data-ux='desktop']) .pw-form .field > span:first-child {
   display: none;
 }
 
@@ -1417,6 +1417,77 @@ body[data-ux='landscape'] .profile-head .avatar {
   margin: 0 0 10px;
   font-weight: 800;
   line-height: 1.5;
+}
+
+/* Handedness toggle (setup header, next to the My Page name) */
+.hand-btn {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  background: linear-gradient(#FFF8E6, #E8C98E);
+  box-shadow: 0 3px 0 var(--ink);
+  cursor: pointer;
+}
+
+.hand-btn svg {
+  width: 100%;
+  height: 100%;
+}
+
+.hand-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+
+.hand-btn.small {
+  width: 32px;
+  height: 32px;
+  padding: 1px;
+  border-width: 2px;
+  border-radius: 9px;
+  box-shadow: 0 2px 0 var(--ink);
+}
+
+/* Eye button inside password fields */
+.pw-wrap {
+  position: relative;
+  display: block;
+}
+
+.pw-wrap input {
+  padding-right: 46px;
+}
+
+.pw-eye {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+  border: none;
+  background: none;
+  color: var(--wood);
+  cursor: pointer;
+}
+
+.pw-eye svg {
+  width: 22px;
+  height: 22px;
+}
+
+.pw-eye[aria-pressed='true'] {
+  color: var(--orange);
 }
 
 .confirm-word {
@@ -1671,7 +1742,7 @@ body[data-ux='landscape'] .lobby-center {
   text-overflow: ellipsis;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 70;
+  z-index: 97;
   padding: 8px 18px;
   font-weight: 900;
   color: var(--ink);
@@ -1711,10 +1782,6 @@ body[data-ux='landscape'] .lobby-center {
   color: var(--cream);
   text-shadow: 0 2px 0 var(--ink), 0 0 6px rgba(0, 0, 0, 0.6);
   text-align: center;
-}
-
-.head-spacer {
-  width: 80px;
 }
 
 .setup-scroll {
@@ -2856,6 +2923,16 @@ body[data-ux='desktop'] .arrow-pad {
   gap: 4px;
   pointer-events: auto;
   touch-action: none;
+}
+
+/* Right-handed (default): fan pad under the right thumb, arrows under the left; left-handed keeps
+   the base layout above */
+body[data-hand='right'] .arc-pad {
+  left: min(calc(100% - var(--arc-x)), calc(100% - var(--arc-base-w) * var(--arc-scale) / 2 - 8px - var(--safe-right)));
+}
+
+body[data-hand='right'] .arrow-pad {
+  left: max(calc(100% - var(--arrow-x)), calc(var(--arrow-w) * 1.5 + 10px + var(--safe-left)));
 }
 
 .arrow-row {

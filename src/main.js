@@ -10,9 +10,11 @@ import './ui/GlobalLangButton.js';
 import { auth } from './core/firebase.js';
 import { cloud } from './core/cloud.js';
 import { initFitScreen } from './ui/fitScreen.js';
+import { initHandedness } from './ui/HandButton.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   uxMode.apply();
+  initHandedness();
   i18n.updateDOM();
   window.claypopGame = new HybridGameManager();
   initFitScreen();

@@ -6,7 +6,7 @@
 import { auth } from '../core/firebase.js';
 import { i18n } from '../core/i18n.js';
 import { soundSynth } from '../audio/SoundSynth.js';
-import { escapeHtml } from './dom.js';
+import { addPasswordToggles, escapeHtml } from './dom.js';
 
 const VIEWS = {
   LOGIN: 'login',
@@ -165,6 +165,7 @@ export class AuthUI {
       </div>
     `;
     this.bind();
+    addPasswordToggles(this.el);
   }
 
   setView(view) {
