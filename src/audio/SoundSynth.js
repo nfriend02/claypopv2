@@ -133,6 +133,41 @@ class SoundSynthesizer {
     }, 180);
   }
 
+  // Stage 5 truck hitting a rock / pothole: low body thump plus a short rattle
+  playTruckBump(strength = 1) {
+    this.ensureContext();
+    if (!this.ctx || !saveSystem.data.settings.sfxEnabled) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(95, now);
+    osc.frequency.exponentialRampToValueAtTime(38, now + 0.2);
+    g.gain.setValueAtTime(0.75 * strength, now);
+    g.gain.exponentialRampToValueAtTime(0.01, now + 0.26);
+    osc.connect(g);
+    g.connect(this.sfxGain);
+    osc.start(now);
+    osc.stop(now + 0.28);
+
+    const len = Math.floor(this.ctx.sampleRate * 0.18);
+    const buffer = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+    const bp = this.ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 700;
+    bp.Q.value = 1.4;
+    const ng = this.ctx.createGain();
+    ng.gain.value = 0.35 * strength;
+    noise.connect(bp);
+    bp.connect(ng);
+    ng.connect(this.sfxGain);
+    noise.start(now + 0.02);
+  }
+
   playMetallicClick() {
     if (!this.ctx || !saveSystem.data.settings.sfxEnabled) return;
     const now = this.ctx.currentTime;

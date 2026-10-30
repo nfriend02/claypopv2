@@ -7,6 +7,7 @@ import { PhaserOverlay } from '../phaser/PhaserOverlay.js';
 import { PlayerCharacter, CHARACTER_STATES, CHARACTER_DISPLAY_SCALE } from '../entities/PlayerCharacter.js';
 import { LeadShotPhysics } from '../physics/LeadShotPhysics.js';
 import { StageManager, CLAY_PEAK_V } from '../stages/StageManager.js';
+import { TruckRide, TRUCK_LANE_MAX, TRUCK_DEPTH_RANGE } from '../stages/TruckRide.js';
 import { TARGET_TYPES, DEBRIS_COLORS, preloadTargetTextures } from '../entities/ClayTarget.js';
 import { targetCatalog, TARGET_DEFS } from '../config/targetCatalog.js';
 import { InputController } from '../input/InputController.js';
@@ -31,7 +32,6 @@ import { StageCutscene, cutsceneUrl } from '../ui/StageCutscene.js';
 const FIRE_COOLDOWN = 0.28;
 const CLEAR_SCORE = 500;
 const JEEP_WIDTH_M = 2.5;
-const JEEP_BED_HALF_M = 0.8;
 const AIM_BAND_BELOW = 0.03; // bottom aim line sits this far (screen height) under the flattest arc's peak
 const AIM_HEAD_GAP = 0.12; // the muzzle sits ~0.07 above the hat line; keep the bottom line clear of it
 
@@ -43,6 +43,13 @@ export class HybridGameManager {
     this.three = new ThreeCanvas(this.gameContainer);
     this.overlay = new PhaserOverlay(this.gameContainer);
     this.stageManager = new StageManager(this.three, this.overlay, soundSynth, gameState);
+    this.truck = new TruckRide(this.three);
+    this.truck.onBump = (kind, scale) => {
+      soundSynth.playTruckBump(scale);
+      if (scale >= 1 && gameState.currentState === GameStates.PLAYING) {
+        this.overlay.spawnNotice(i18n.t(kind === 'rock' ? 'notice_bump_rock' : 'notice_bump_pothole'), 'penalty');
+      }
+    };
     this.scheduler = new GameScheduler();
 
     this.gameState = gameState;
@@ -188,6 +195,8 @@ export class HybridGameManager {
     this.player.reset();
     await Promise.all([opening, this.overlay.setCharacter(charId)]);
 
+    // The previous round may have kept running under the cutscene (e.g. a Stage 4 wave flinch)
+    this.player.reset();
     gameState.resetGameSession(stageNumber, charId, modeId);
     gameState.setState(GameStates.PLAYING);
     this.stageManager.startStage(stageNumber);
@@ -206,12 +215,13 @@ export class HybridGameManager {
 
   applyStageLimits() {
     if (gameState.currentStageNumber === 5) {
-      const z = this.three.getPlayerLineZ(0.2);
-      const lane = Math.min(0.6, JEEP_BED_HALF_M / (this.three.halfWidthAt(z) * 0.8));
-      this.player.setLimits([-lane, lane], [0.2, 0.2]);
-      this.player.depth = 0.2;
-      this.player.lane = 0;
+      // The arrows steer the whole pickup (TruckRide); the hero stays seated in it
+      this.truck.reset(true);
+      this.player.setLimits([-TRUCK_LANE_MAX, TRUCK_LANE_MAX], TRUCK_DEPTH_RANGE);
+      this.player.lane = this.truck.lane;
+      this.player.depth = this.truck.depth;
     } else {
+      this.truck.reset(false);
       this.player.setLimits([-1, 1], [0, 1]);
     }
   }
@@ -455,6 +465,9 @@ export class HybridGameManager {
       origin = { x: c.feetX, y: c.feetY - c.heightPx * 1.1, dx: Math.sin(r), dy: -Math.cos(r) };
     }
     this.player.layoutCrosshair(origin, this.three.width, this.three.height, this.getAimBand(c));
+    const jolt = this.truck.getAimJolt();
+    this.player.aimU += jolt.x / this.three.width;
+    this.player.aimV += jolt.y / this.three.height;
     this.input.refreshDial();
     return c;
   }
@@ -493,7 +506,7 @@ export class HybridGameManager {
     };
 
     if (gameState.currentStageNumber === 5) {
-      const anchorWorld = new THREE.Vector3(0, GROUND_Y + 1.05, three.getPlayerLineZ(0.2));
+      const anchorWorld = three.getPlayerWorld(this.player);
       const a = three.project(anchorWorld);
       const edge = three.project(anchorWorld.clone().add(three.cameraRight.clone().multiplyScalar(JEEP_WIDTH_M / 2)));
       view.jeep = { x: a.x, y: a.y, width: Math.abs(edge.x - a.x) * 2 };
@@ -536,7 +549,12 @@ export class HybridGameManager {
         if (gameState.currentState === GameStates.PLAYING) {
           gameState.update(dt);
           const mv = this.input.getMove();
-          this.player.update(dt, mv.x, mv.y);
+          if (this.truck.active) {
+            this.player.update(dt, 0, 0);
+            this.truck.update(dt, this.player, mv);
+          } else {
+            this.player.update(dt, mv.x, mv.y);
+          }
           this.stageManager.update(dt);
           this.three.update(dt);
           this.checkWave(this.three.getPlayerWorld(this.player));
@@ -544,6 +562,7 @@ export class HybridGameManager {
           if (gameState.currentState === GameStates.ENDING) this.beginEnding();
         } else {
           this.player.update(dt, 0, 0);
+          this.truck.update(dt, this.player, { x: 0, y: 0 }, false);
           this.three.update(dt);
         }
       }

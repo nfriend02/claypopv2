@@ -8,7 +8,7 @@ export const GROUND_Y = -1.2;
 const CAMERA_POS = new THREE.Vector3(0, 1.8, 4.0);
 const LOOK_AT = new THREE.Vector3(0, 2.6, -20);
 const LAUNCH_Z = -12;
-const STAGE5_BED_HEIGHT = 1.05;
+export const STAGE5_BED_HEIGHT = 1.05;
 
 const STAGE_PROPS = {
   1: [
@@ -108,6 +108,13 @@ export class ThreeCanvas {
 
     this.shakeIntensity = 0;
     this.uvScrollOffset = 0;
+    this.roadSpeed = 9;
+
+    // Stage 5 rides one bed height higher so the hero frames like on the ground stages; the camera
+    // also trails the truck a little (cameraFollow) and the truck body bounces (truckLift, metres)
+    this.cameraBase = CAMERA_POS.clone();
+    this.cameraFollow = new THREE.Vector3();
+    this.truckLift = 0;
 
     this._vec = new THREE.Vector3();
     this.cameraRight = new THREE.Vector3(1, 0, 0);
@@ -287,18 +294,31 @@ export class ThreeCanvas {
     return this.camera.position.clone().addScaledVector(dir, t);
   }
 
-  halfWidthAt(z) {
-    const left = this.unprojectAtZ(0, 0.5, z);
-    return Math.abs(left.x);
+  // View ray through screen fraction (u, v); depends only on the camera's orientation
+  viewRay(u, v) {
+    const ndc = new THREE.Vector3(u * 2 - 1, 1 - v * 2, 0.5).unproject(this.camera);
+    return ndc.sub(this.camera.position).normalize();
   }
 
-  // Ground z where the bottom edge of the screen meets the ground
+  // Layout helpers below use the resting camera (no follow, bounce or shake) so the lane / depth
+  // grid doesn't move with the view
+  halfWidthAt(z) {
+    const dir = this.viewRay(0, 0.5);
+    const t = (z - this.cameraBase.z) / dir.z;
+    return Math.abs(dir.x * t);
+  }
+
+  // Floor the hero stands on: the ground, or the pickup bed on Stage 5
+  getFloorY() {
+    return this.currentStageNumber === 5 ? GROUND_Y + STAGE5_BED_HEIGHT : GROUND_Y;
+  }
+
+  // Floor z where the bottom edge of the screen meets it
   getNearGroundZ() {
-    const ndc = new THREE.Vector3(0, -1, 0.5).unproject(this.camera);
-    const dir = ndc.sub(this.camera.position).normalize();
+    const dir = this.viewRay(0.5, 1);
     if (dir.y >= -1e-3) return -2;
-    const t = (GROUND_Y - this.camera.position.y) / dir.y;
-    return this.camera.position.z + dir.z * t;
+    const t = (this.getFloorY() - this.cameraBase.y) / dir.y;
+    return this.cameraBase.z + dir.z * t;
   }
 
   // Player feet line: depth 0 (nearest) .. 1 (farthest)
@@ -309,8 +329,8 @@ export class ThreeCanvas {
   getPlayerWorld(player) {
     const z = this.getPlayerLineZ(player.depth);
     const half = this.halfWidthAt(z) * 0.8;
-    const y = this.currentStageNumber === 5 ? GROUND_Y + STAGE5_BED_HEIGHT : GROUND_Y;
-    return new THREE.Vector3(player.lane * half, y, z);
+    const lift = this.currentStageNumber === 5 ? this.truckLift : 0;
+    return new THREE.Vector3(player.lane * half, this.getFloorY() + lift, z);
   }
 
   getLaunchPoint(side) {
@@ -323,6 +343,11 @@ export class ThreeCanvas {
 
   setStageTheme(stageNumber) {
     this.currentStageNumber = stageNumber;
+    this.cameraBase.copy(CAMERA_POS);
+    if (stageNumber === 5) this.cameraBase.y += STAGE5_BED_HEIGHT;
+    this.cameraFollow.set(0, 0, 0);
+    this.truckLift = 0;
+    this.roadSpeed = 9;
     this.applySkyTexture(stageNumber);
     const mat = this.groundMesh.material;
     mat.map = this.defaultGroundTexture;
@@ -657,11 +682,11 @@ export class ThreeCanvas {
 
     if (stage === 5) {
       if (this.groundTexture) {
-        this.uvScrollOffset += dt * 0.9;
+        this.uvScrollOffset += dt * 0.1 * this.roadSpeed;
         this.groundTexture.offset.y = this.uvScrollOffset;
       }
       this.roadsideProps.forEach((s) => {
-        s.position.z += dt * 9;
+        s.position.z += dt * this.roadSpeed;
         if (s.position.z > 2) s.position.z -= 45;
       });
       this.layoutRoadside();
@@ -711,13 +736,12 @@ export class ThreeCanvas {
     }
 
     const bump = stage === 5 ? Math.sin(performance.now() * 0.018) * 0.025 : 0;
+    this.camera.position.copy(this.cameraBase).add(this.cameraFollow);
+    this.camera.position.y += bump;
     if (this.shakeIntensity > 0) {
-      const sx = (Math.random() - 0.5) * this.shakeIntensity;
-      const sy = (Math.random() - 0.5) * this.shakeIntensity;
-      this.camera.position.set(CAMERA_POS.x + sx, CAMERA_POS.y + sy + bump, CAMERA_POS.z);
+      this.camera.position.x += (Math.random() - 0.5) * this.shakeIntensity;
+      this.camera.position.y += (Math.random() - 0.5) * this.shakeIntensity;
       this.shakeIntensity = Math.max(0, this.shakeIntensity - dt * 0.9);
-    } else {
-      this.camera.position.set(CAMERA_POS.x, CAMERA_POS.y + bump, CAMERA_POS.z);
     }
     this.camera.updateMatrixWorld();
   }
