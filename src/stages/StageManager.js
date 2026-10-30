@@ -12,6 +12,10 @@ const STAGE_TUNING = {
   5: { interval: 1.9, flight: 0.85 }
 };
 
+// Screen height (fraction from the top) of the clay parabola peaks: `high` = tallest arc,
+// `low` = flattest arc. The aim dial spans this band.
+export const CLAY_PEAK_V = { high: 0.15, low: 0.32 };
+
 export class StageManager {
   constructor(threeCanvas, overlay, soundSynth, gameState) {
     this.three = threeCanvas;
@@ -108,7 +112,7 @@ export class StageManager {
     const launch = this.three.getLaunchPoint(-dir);
     const end = this.three.getLaunchPoint(dir);
     const span = Math.abs(end.x - launch.x);
-    const peakV = 0.15 + Math.random() * 0.17;
+    const peakV = CLAY_PEAK_V.high + Math.random() * (CLAY_PEAK_V.low - CLAY_PEAK_V.high);
     const peakY = this.three.unprojectAtZ(0.5, peakV, launch.z).y;
 
     const plan = {

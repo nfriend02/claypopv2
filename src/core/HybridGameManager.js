@@ -6,7 +6,7 @@ import { ThreeCanvas, GROUND_Y } from '../renderer/ThreeCanvas.js';
 import { PhaserOverlay } from '../phaser/PhaserOverlay.js';
 import { PlayerCharacter, CHARACTER_STATES, CHARACTER_DISPLAY_SCALE } from '../entities/PlayerCharacter.js';
 import { LeadShotPhysics } from '../physics/LeadShotPhysics.js';
-import { StageManager } from '../stages/StageManager.js';
+import { StageManager, CLAY_PEAK_V } from '../stages/StageManager.js';
 import { TARGET_TYPES, DEBRIS_COLORS, preloadTargetTextures } from '../entities/ClayTarget.js';
 import { targetCatalog, TARGET_DEFS } from '../config/targetCatalog.js';
 import { InputController } from '../input/InputController.js';
@@ -32,6 +32,8 @@ const FIRE_COOLDOWN = 0.28;
 const CLEAR_SCORE = 500;
 const JEEP_WIDTH_M = 2.5;
 const JEEP_BED_HALF_M = 0.8;
+const AIM_BAND_BELOW = 0.03; // bottom aim line sits this far (screen height) under the flattest arc's peak
+const AIM_HEAD_GAP = 0.12; // the muzzle sits ~0.07 above the hat line; keep the bottom line clear of it
 
 export class HybridGameManager {
   constructor() {
@@ -452,9 +454,18 @@ export class HybridGameManager {
       const r = (angle * Math.PI) / 180;
       origin = { x: c.feetX, y: c.feetY - c.heightPx * 1.1, dx: Math.sin(r), dy: -Math.cos(r) };
     }
-    this.player.layoutCrosshair(origin, this.three.width, this.three.height);
+    this.player.layoutCrosshair(origin, this.three.width, this.three.height, this.getAimBand(c));
     this.input.refreshDial();
     return c;
+  }
+
+  // Vertical aim band: bottom line just under the flattest clay arc's peak, top line on the tallest
+  // arc's peak. The bottom stays above the hero's hat (and so the muzzle) because the barrel only
+  // points upward; the hat is used rather than the muzzle so the jeep's bounce doesn't shake it.
+  getAimBand(c) {
+    const headV = (c.feetY - c.heightPx) / this.three.height;
+    const bottom = Math.min(CLAY_PEAK_V.low + AIM_BAND_BELOW, headV - AIM_HEAD_GAP);
+    return { top: CLAY_PEAK_V.high, bottom: Math.max(CLAY_PEAK_V.high, bottom) };
   }
 
   buildView() {

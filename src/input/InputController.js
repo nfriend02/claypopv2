@@ -2,8 +2,8 @@
 // Left fan pad = gun dial, right arrow pad = character movement.
 //
 // The fan is a polar dial: a cursor confined to the fan picks the gun angle (its direction from the
-// fan pivot, snapped to 5-degree steps) and how far up the barrel line the crosshair sits (its
-// distance from the pivot).
+// fan pivot, snapped to 5-degree steps) and the crosshair height (its distance from the pivot:
+// centre = just under the flattest clay arc, rim = peak of the tallest arc).
 //  - Desktop: the mouse is pointer-locked during play and only moves a virtual cursor inside the
 //    fan; click fires. The arrow pad reacts to the keyboard arrow keys only.
 //  - Mobile: two-finger play. One finger is held inside the fan (release fires) while the other
@@ -15,7 +15,8 @@ import { AIM_ANGLE_MAX, AIM_ANGLE_STEP, AIM_REACH } from '../entities/PlayerChar
 
 const FAN_PIVOT_Y = 0.83; // pivot height inside the pad box (fraction from top), matches .arc-needle
 const FAN_RADIUS = 0.95; // usable radius as a fraction of the largest semicircle that fits the pad
-const FAN_DEAD_ZONE = 0.18; // inner part of the fan that maps to the shortest reach
+const FAN_DEAD_ZONE = 0.22; // inner part of the fan that maps to the bottom aim line
+const FAN_FULL = 0.95; // from here to the rim the crosshair sits on the top aim line
 const FAN_SWEEP_DEG = 90; // fan half-angle; mapped onto +-AIM_ANGLE_MAX
 
 const ARROW_KEYS = {
@@ -202,7 +203,7 @@ export class InputController {
       const gunDeg = (fanDeg / FAN_SWEEP_DEG) * AIM_ANGLE_MAX;
       this.player.aimAngle = clamp(Math.round(gunDeg / AIM_ANGLE_STEP) * AIM_ANGLE_STEP, -AIM_ANGLE_MAX, AIM_ANGLE_MAX);
     }
-    const f = clamp((len - FAN_DEAD_ZONE) / (1 - FAN_DEAD_ZONE), 0, 1);
+    const f = clamp((len - FAN_DEAD_ZONE) / (FAN_FULL - FAN_DEAD_ZONE), 0, 1);
     this.player.aimReach = AIM_REACH.min + (AIM_REACH.max - AIM_REACH.min) * f;
     this.appliedAim = { angle: this.player.aimAngle, reach: this.player.aimReach };
     this.refreshDial();
@@ -213,7 +214,7 @@ export class InputController {
     const p = this.player;
     const fanRad = ((p.aimAngle / AIM_ANGLE_MAX) * FAN_SWEEP_DEG * Math.PI) / 180;
     const f = clamp((p.aimReach - AIM_REACH.min) / (AIM_REACH.max - AIM_REACH.min), 0, 1);
-    const len = FAN_DEAD_ZONE + (1 - FAN_DEAD_ZONE) * f;
+    const len = FAN_DEAD_ZONE + (FAN_FULL - FAN_DEAD_ZONE) * f;
     this.cursor = { x: Math.sin(fanRad) * len, y: Math.cos(fanRad) * len };
     this.appliedAim = { angle: p.aimAngle, reach: p.aimReach };
   }

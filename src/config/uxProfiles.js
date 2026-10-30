@@ -25,8 +25,8 @@ export const UX_PROFILES = {
       '--arc-scale': '2',
       '--arc-x': '32%',
       '--arrow-x': '68%',
-      '--arrow-h': '54px',
-      '--arrow-w': '60px'
+      '--arrow-h': '43px',
+      '--arrow-w': '54px'
     }
   },
 
@@ -47,9 +47,9 @@ export const UX_PROFILES = {
       '--hud-track': '74px',
       '--arc-scale': '1.5',
       '--arc-x': '32%',
-      '--arrow-x': '68%',
-      '--arrow-h': '46px',
-      '--arrow-w': '52px'
+      '--arrow-x': '75%',
+      '--arrow-h': '37px',
+      '--arrow-w': '47px'
     }
   },
 
@@ -71,8 +71,8 @@ export const UX_PROFILES = {
       '--arc-scale': '1.5',
       '--arc-x': '28%',
       '--arrow-x': '72%',
-      '--arrow-h': '42px',
-      '--arrow-w': '44px'
+      '--arrow-h': '34px',
+      '--arrow-w': '40px'
     }
   }
 };

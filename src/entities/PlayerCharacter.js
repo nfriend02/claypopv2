@@ -58,7 +58,9 @@ export const STATE_DURATIONS = {
 export const AIM_BOUNDS = { minU: 0.03, maxU: 0.97, minV: 0.12, minVPortrait: 0.17, maxV: 0.78 };
 export const AIM_ANGLE_STEP = 5;
 export const AIM_ANGLE_MAX = 75;
-export const AIM_REACH = { min: 0.08, max: 1.2, initial: 0.4 };
+// Reach = where the crosshair sits in the aim band: 0 = bottom line (just under the flattest
+// clay arc), 1 = top line (peak of the tallest arc)
+export const AIM_REACH = { min: 0, max: 1, initial: 0 };
 
 export class PlayerCharacter {
   constructor(charId = 'young_cowboy') {
@@ -78,8 +80,8 @@ export class PlayerCharacter {
     this.laneLimits = [-1, 1];
     this.depthLimits = [0, 1];
 
-    // Gun angle from vertical in 5-degree steps (+ = right) and how far up the barrel line the
-    // crosshair sits (fraction of screen height). aimU / aimV are the resulting crosshair fractions.
+    // Gun angle from vertical in 5-degree steps (+ = right) and the crosshair height inside the
+    // aim band (AIM_REACH). aimU / aimV are the resulting crosshair fractions.
     this.aimAngle = -15;
     this.aimReach = AIM_REACH.initial;
     this.aimU = 0.4;
@@ -119,14 +121,16 @@ export class PlayerCharacter {
     this.aimReach = Math.max(AIM_REACH.min, Math.min(AIM_REACH.max, this.aimReach + delta * this.stats.aimSensitivity));
   }
 
-  // Crosshair = muzzle + barrel direction * reach, shortened so it stays inside the aim bounds
-  layoutCrosshair(origin, width, height) {
+  // Crosshair = where the barrel line crosses the reach height of the aim band (band.top / band.bottom
+  // in screen-height fractions), shortened so it stays inside the aim bounds
+  layoutCrosshair(origin, width, height, band) {
     if (!origin) return;
     const minX = AIM_BOUNDS.minU * width;
     const maxX = AIM_BOUNDS.maxU * width;
     const minY = (height > width ? AIM_BOUNDS.minVPortrait : AIM_BOUNDS.minV) * height;
     const maxY = AIM_BOUNDS.maxV * height;
-    let len = this.aimReach * height;
+    const targetY = (band.bottom + (band.top - band.bottom) * this.aimReach) * height;
+    let len = origin.dy < -1e-4 ? Math.max(0, (origin.y - targetY) / -origin.dy) : 0;
     if (origin.dx > 1e-4) len = Math.min(len, (maxX - origin.x) / origin.dx);
     if (origin.dx < -1e-4) len = Math.min(len, (minX - origin.x) / origin.dx);
     if (origin.dy < -1e-4) len = Math.min(len, (minY - origin.y) / origin.dy);
