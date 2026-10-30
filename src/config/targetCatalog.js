@@ -31,6 +31,7 @@ const HIT_ZONE_SCALE = HIT_ZONE_EASE / TARGET_VISUAL_SCALE;
  *   perp   = |(M - C) x V_hat|         must satisfy perp <= perpRatio*R   (spec: R/2)
  *   nose   = |M - (C + V_hat*leadMax*R)|  also a hit when nose <= noseRatio*R (a disc on the front tip,
  *            so shots just ahead of the leading edge count)
+ *   body   = the front half of the drawn sprite (lead >= 0 within its half extent) is always a hit
  *   perfect lead when lead is inside [perfectMin*R, perfectMax*R]
  * Targets slower than stillSpeedPx px/s are treated as stationary: |M - C| <= R.
  */

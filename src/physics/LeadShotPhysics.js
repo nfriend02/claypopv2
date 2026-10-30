@@ -1,6 +1,6 @@
 // src/physics/LeadShotPhysics.js
 // Screen-space lead-shot evaluation: (0 <= (M - C) . V_hat <= R and |perp| <= R/2), or within R/2 of the
-// front tip C + V_hat * R
+// front tip C + V_hat * R, or anywhere on the front half of the drawn sprite
 
 import { HIT_DEFAULTS } from '../config/targetCatalog.js';
 
@@ -31,7 +31,9 @@ export class LeadShotPhysics {
     const inLead = lead >= tuning.leadMin * R && lead <= tuning.leadMax * R;
     const inPerp = perp <= tuning.perpRatio * R;
     const inNose = Math.hypot(lead - tuning.leadMax * R, perp) <= tuning.noseRatio * R;
-    const isHit = (inLead && inPerp) || inNose;
+    const body = (probe.bodyRadius || probe.radius) * bonus;
+    const inFrontHalf = lead >= 0 && Math.hypot(lead, perp) <= body;
+    const isHit = (inLead && inPerp) || inNose || inFrontHalf;
     const isPerfectLead = isHit && lead >= tuning.perfectMin * R && lead <= tuning.perfectMax * R;
 
     // Lower score = better candidate when several targets qualify

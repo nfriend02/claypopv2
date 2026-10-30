@@ -79,6 +79,7 @@ export class ClayTarget {
 
     this.mesh = new THREE.Group();
     const size = targetCatalog.getSpriteWorldSize(type, this.worldRadius);
+    this.bodyRadius = Math.max(size.width, size.height) / 2;
     this.spriteMaterial = new THREE.SpriteMaterial({
       map: getTargetTexture(type),
       transparent: true,
@@ -182,12 +183,14 @@ export class ClayTarget {
     const c = projector.project(this.position);
     const ahead = projector.project(this.position.clone().addScaledVector(this.velocity, 0.05));
     const edge = projector.project(this.position.clone().add(projector.cameraRight.clone().multiplyScalar(this.worldRadius)));
+    const radius = Math.hypot(edge.x - c.x, edge.y - c.y);
     return {
       x: c.x,
       y: c.y,
       vx: (ahead.x - c.x) / 0.05,
       vy: (ahead.y - c.y) / 0.05,
-      radius: Math.hypot(edge.x - c.x, edge.y - c.y),
+      radius,
+      bodyRadius: radius * (this.bodyRadius / this.worldRadius),
       visible: c.visible
     };
   }
