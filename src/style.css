@@ -382,8 +382,12 @@ select {
 
 .modal-card {
   width: min(440px, 94vw);
-  max-height: 92vh;
+}
+
+/* fitScreen.js shrinks cards to fit; hosts only scroll when even the minimum zoom is too big */
+.fit-overflow {
   overflow: auto;
+  align-items: flex-start;
 }
 
 .modal-head {
@@ -617,13 +621,9 @@ body[data-screen]:not([data-screen='intro']):not([data-screen='lobby']) .global-
 }
 
 /* Every profile: cards start below the top button row (sound / language / account bar),
-   never under it, and scroll inside themselves instead of running off-screen */
+   never under it; fitScreen.js scales them to the space that is left */
 .ui-screen:is(.auth-screen, .setup-screen, .result-screen) {
   padding-top: calc(var(--topbar-h) + var(--safe-top));
-}
-
-:is(.auth-card, .setup-card, .result-card) {
-  max-height: 100%;
 }
 
 .global-lang-btn:active {
@@ -823,11 +823,6 @@ body.cutscene-playing .modal-backdrop {
   padding-top: 12px;
 }
 
-.auth-sheet {
-  min-height: 0;
-  overflow: auto;
-  overscroll-behavior: contain;
-}
 
 .auth-logo {
   display: block;
@@ -1085,6 +1080,15 @@ body[data-ux='landscape'] .signup-link {
   margin-top: 4px;
 }
 
+body[data-ux='landscape'] .guest-row .btn {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+body[data-ux='landscape'] .guest-row input {
+  padding: 8px;
+}
+
 body[data-ux='landscape'] .signup-form {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1170,12 +1174,6 @@ body.mypage-open .account-bar {
   flex-direction: column;
 }
 
-.mypage-sheet {
-  min-height: 0;
-  overflow: auto;
-  overscroll-behavior: contain;
-}
-
 /* Desktop / landscape: account + password on the left, nickname + records on the right */
 body:not([data-ux='portrait']) .mypage-card {
   width: min(820px, 94vw);
@@ -1192,6 +1190,55 @@ body:not([data-ux='portrait']) .mypage-sheet .nick-field {
   margin-top: 0;
 }
 
+/* Changing the password swaps the nickname / records block for the form instead of growing the card */
+.mypage-card.pw-mode :is(.nick-field, .recent-runs, .guest-expiry) {
+  display: none;
+}
+
+/* Phones: denser My Page, three latest records, field captions carried by placeholders */
+body:not([data-ux='desktop']) .mypage-card .modal-head {
+  margin-bottom: 8px;
+}
+
+body:not([data-ux='desktop']) .mypage-sheet {
+  padding: 10px;
+}
+
+body:not([data-ux='desktop']) .mypage-stats .plaque {
+  min-width: 0;
+  padding: 4px 10px 4px 6px;
+}
+
+body:not([data-ux='desktop']) .mypage-stats .plaque .ui-icon {
+  width: 28px;
+  height: 28px;
+}
+
+body:not([data-ux='desktop']) .mypage-stats .plaque b {
+  font-size: 18px;
+}
+
+body:not([data-ux='desktop']) .recent-runs li:nth-child(n + 4) {
+  display: none;
+}
+
+body:not([data-ux='desktop']) .pw-form .field > span {
+  display: none;
+}
+
+body:not([data-ux='desktop']) .pw-form .field {
+  margin-bottom: 6px;
+}
+
+body:not([data-ux='desktop']) .mypage-sheet .form-error:empty {
+  min-height: 0;
+  margin: 0;
+}
+
+body[data-ux='portrait'] .mypage-card.pw-mode .mypage-stats {
+  display: none;
+}
+
 /* Modals sit below the top button row; their close button lives inside the header so a
    scrolling card never clips it */
 .modal-backdrop {
@@ -1202,10 +1249,6 @@ body:not([data-ux='portrait']) .mypage-sheet .nick-field {
   position: static;
   margin-left: auto;
   flex: none;
-}
-
-body[data-ux='landscape'] .modal-card {
-  max-height: 100%;
 }
 
 body[data-ux='landscape'] .profile-head .avatar {
@@ -1647,7 +1690,6 @@ body[data-ux='landscape'] .lobby-center {
 
 .setup-card {
   width: min(1000px, 96vw);
-  max-height: 100%;
   display: flex;
   flex-direction: column;
   padding: 12px;
@@ -1676,7 +1718,6 @@ body[data-ux='landscape'] .lobby-center {
 }
 
 .setup-scroll {
-  overflow: auto;
   background: var(--paper);
   border: 3px solid var(--ink);
   border-radius: 14px;
@@ -1688,7 +1729,7 @@ body[data-ux='landscape'] .lobby-center {
 
 .char-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -1764,7 +1805,7 @@ body[data-ux='landscape'] .lobby-center {
 
 .mode-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -1797,7 +1838,7 @@ body[data-ux='landscape'] .lobby-center {
 
 .stage-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -1845,17 +1886,126 @@ body[data-ux='landscape'] .lobby-center {
   padding-top: 12px;
 }
 
-body[data-ux='portrait'] .char-card small,
-body[data-ux='landscape'] .char-card small {
+.setup-head .btn {
+  white-space: nowrap;
+}
+
+/* Phones: characters, clay modes and stages each sit in one row so the whole setup is one screen */
+body:not([data-ux='desktop']) .char-card small {
   display: none;
 }
 
-body[data-ux='portrait'] .mode-grid {
-  grid-template-columns: repeat(2, 1fr);
+body:not([data-ux='desktop']) .setup-card {
+  padding: 8px;
 }
 
-body[data-ux='portrait'] .stage-grid {
-  grid-template-columns: repeat(3, 1fr);
+body:not([data-ux='desktop']) .setup-head {
+  margin-bottom: 6px;
+}
+
+body:not([data-ux='desktop']) .setup-scroll {
+  padding: 8px;
+  gap: 8px;
+}
+
+body:not([data-ux='desktop']) .setup-scroll .section-tag {
+  margin: 0 0 6px;
+  padding: 2px 10px;
+  font-size: 12px;
+}
+
+body:not([data-ux='desktop']) :is(.char-grid, .mode-grid, .stage-grid) {
+  gap: 6px;
+}
+
+body:not([data-ux='desktop']) .char-card {
+  padding: 5px 4px 6px;
+  gap: 2px;
+}
+
+body:not([data-ux='desktop']) .char-card b {
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+body:not([data-ux='desktop']) .char-stats {
+  font-size: 9px;
+  letter-spacing: 0;
+}
+
+body:not([data-ux='desktop']) .mode-card {
+  padding: 4px;
+  gap: 2px;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+body:not([data-ux='desktop']) .mode-art {
+  height: 34px;
+}
+
+body:not([data-ux='desktop']) .mode-art img {
+  height: 30px;
+}
+
+body:not([data-ux='desktop']) .mode-art.n3 img {
+  height: 20px;
+  margin: 0 -4px;
+}
+
+body:not([data-ux='desktop']) .stage-no {
+  left: 3px;
+  top: 3px;
+  min-width: 20px;
+  height: 20px;
+  font-size: 12px;
+  border-radius: 6px;
+}
+
+body:not([data-ux='desktop']) .stage-desc {
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+body:not([data-ux='desktop']) .setup-foot {
+  padding-top: 8px;
+}
+
+body:not([data-ux='desktop']) .setup-foot .btn-wide {
+  min-height: 44px;
+  font-size: 17px;
+}
+
+body[data-ux='portrait'] .char-portrait {
+  height: clamp(80px, 17vh, 150px);
+}
+
+/* Landscape / desktop: characters on the left, clay modes + stages on the right */
+body:not([data-ux='portrait']) .setup-scroll {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  align-items: start;
+  gap: 8px 10px;
+}
+
+body:not([data-ux='portrait']) .setup-scroll > section:first-child {
+  grid-row: 1 / span 2;
+}
+
+body[data-ux='desktop'] .mode-art {
+  height: 46px;
+}
+
+body[data-ux='desktop'] .mode-art img {
+  height: 40px;
+}
+
+body[data-ux='desktop'] .mode-art.n3 img {
+  height: 26px;
+}
+
+body[data-ux='landscape'] .char-portrait {
+  height: clamp(70px, 30vh, 150px);
 }
 
 /* ==========================================================================
@@ -1864,8 +2014,6 @@ body[data-ux='portrait'] .stage-grid {
 
 .result-card {
   width: min(560px, 94vw);
-  max-height: 100%;
-  overflow: auto;
 }
 
 .result-head {
@@ -1939,7 +2087,7 @@ body[data-ux='portrait'] .stage-grid {
 
 .stat-tiles {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -2174,10 +2322,10 @@ body[data-ux='portrait'] .result-screen.is-settled {
   justify-content: center;
   align-items: flex-start;
   padding-right: calc(10px + var(--safe-right));
+  padding-bottom: var(--hero-band);
 }
 
 body[data-ux='portrait'] .result-screen .result-card {
-  max-height: calc(100vh - var(--hero-band) - var(--safe-top) - var(--topbar-h));
   padding: 10px;
 }
 
@@ -2189,7 +2337,6 @@ body[data-ux='landscape'] .result-screen {
 
 body[data-ux='landscape'] .result-screen .result-card {
   padding: 10px 12px;
-  overflow: auto;
 }
 
 body[data-ux='landscape'] .result-head {
@@ -2263,7 +2410,7 @@ body[data-ux='portrait'] .result-screen .score-spot b {
 }
 
 body[data-ux='portrait'] .result-screen .stat-tiles {
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 5px;
 }
 

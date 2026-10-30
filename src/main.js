@@ -9,11 +9,13 @@ import './ui/GlobalSoundButton.js';
 import './ui/GlobalLangButton.js';
 import { auth } from './core/firebase.js';
 import { cloud } from './core/cloud.js';
+import { initFitScreen } from './ui/fitScreen.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   uxMode.apply();
   i18n.updateDOM();
   window.claypopGame = new HybridGameManager();
+  initFitScreen();
   if (import.meta.env.DEV) window.claypopDebug = { auth, cloud };
   window.addEventListener('claypop_language_changed', () => i18n.updateDOM());
 });

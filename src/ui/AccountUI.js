@@ -158,19 +158,19 @@ export class AccountUI {
             <dd class="pw-cell">${this.passwordRow(user)}</dd>
           </dl>
           ${user.hasPassword ? `<p class="field-hint">${t('mypage_pw_hidden_note')}</p>` : ''}
-
-          ${user.hasPassword ? `
-          <form class="pw-form" data-pw-form hidden novalidate>
-            <input type="text" name="username" autocomplete="username" value="${escapeHtml(user.email || user.phoneNumber || '')}" hidden>
-            <label class="field"><span>${t('mypage_current_pw')}</span><input type="password" name="current" autocomplete="current-password"></label>
-            <label class="field"><span>${t('mypage_new_pw')}</span><input type="password" name="next" autocomplete="new-password"></label>
-            <label class="field"><span>${t('mypage_new_pw_confirm')}</span><input type="password" name="confirm" autocomplete="new-password"></label>
-            <p class="form-error" data-pw-msg role="alert"></p>
-            <button type="submit" class="btn btn-orange btn-block">${t('mypage_change_pw')}</button>
-          </form>` : ''}
          </div>
 
          <div class="mp-col">
+          ${user.hasPassword ? `
+          <form class="pw-form" data-pw-form hidden novalidate>
+            <input type="text" name="username" autocomplete="username" value="${escapeHtml(user.email || user.phoneNumber || '')}" hidden>
+            <label class="field"><span>${t('mypage_current_pw')}</span><input type="password" name="current" autocomplete="current-password" placeholder="${t('mypage_current_pw')}"></label>
+            <label class="field"><span>${t('mypage_new_pw')}</span><input type="password" name="next" autocomplete="new-password" placeholder="${t('mypage_new_pw')}"></label>
+            <label class="field"><span>${t('mypage_new_pw_confirm')}</span><input type="password" name="confirm" autocomplete="new-password" placeholder="${t('mypage_new_pw_confirm')}"></label>
+            <p class="form-error" data-pw-msg role="alert"></p>
+            <button type="submit" class="btn btn-orange btn-block">${t('mypage_change_pw')}</button>
+          </form>` : ''}
+
           <div class="field nick-field">
             <span>${t('mypage_change_nick')}</span>
             <div class="phone-row">
@@ -223,6 +223,7 @@ export class AccountUI {
     q('[data-act="pw-toggle"]')?.addEventListener('click', () => {
       soundSynth.playUiClick();
       pwForm.hidden = !pwForm.hidden;
+      q('.mypage-card').classList.toggle('pw-mode', !pwForm.hidden);
       if (!pwForm.hidden) pwForm.querySelector('[name="current"]').focus();
     });
     pwForm?.addEventListener('submit', async (e) => {
